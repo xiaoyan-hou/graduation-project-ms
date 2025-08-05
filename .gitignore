@@ -1,0 +1,39 @@
+# 依赖目录
+node_modules/
+
+# 环境变量文件
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+
+# 日志文件
+*.log
+
+# 编辑器目录
+.vscode/
+.idea/
+
+# 系统文件
+.DS_Store
+
+# 上传文件目录
+/uploads/
+
+# 构建产物
+dist/
+build/
+
+# 调试文件
+*.pid
+*.seed
+
+# 覆盖率报告
+coverage/
+
+# 缓存
+.cache/
+
+# 临时文件
+*.tmp
