@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Button, message, Tag } from 'antd';
+import { Table, Button, message, Tag, Flex } from 'antd';
 import { applyApi } from '../api';
 
 const TeacherPage = () => {
@@ -13,8 +13,8 @@ const TeacherPage = () => {
   const fetchApplies = async () => {
     setLoading(true);
     try {
-      const data = await applyApi.getApplies();
-      setApplies(data);
+      const apppliesRes = await applyApi.getApplies();
+      setApplies(apppliesRes.data);
     } catch (error) {
       message.error('获取申请列表失败');
     } finally {
@@ -74,23 +74,23 @@ const TeacherPage = () => {
       title: '操作',
       key: 'action',
       render: (_, record) => (
-        <div>
+        <Flex gap="small" wrap>
           <Button 
-            type="link" 
+            type="primary"
             onClick={() => handleApprove(record.id)}
             disabled={record.status !== 'PENDING'}
           >
             通过
           </Button>
           <Button 
-            type="link" 
+            type="primary"
             danger
             onClick={() => handleReject(record.id)}
             disabled={record.status !== 'PENDING'}
           >
             拒绝
           </Button>
-        </div>
+        </Flex>
       ),
     },
   ];

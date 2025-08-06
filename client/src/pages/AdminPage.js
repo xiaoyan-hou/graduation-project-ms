@@ -26,6 +26,8 @@ const AdminPage = () => {
           break;
         case 'students':
           const studentsRes = await studentApi.getStudents();
+          console.log('studentsRes', studentsRes.data);
+
           setStudents(studentsRes.data || []);
           break;
         case 'topics':
@@ -69,21 +71,40 @@ const AdminPage = () => {
   };
 
   const teacherColumns = [
-    { title: '教师编号', dataIndex: 'teacher_no', key: 'teacher_no' },
     { title: '姓名', dataIndex: 'name', key: 'name' },
+    { title: '工号', dataIndex: 'teacher_no', key: 'teacher_no' },
     { title: '职称', dataIndex: 'title', key: 'title' },
+    { title: '教研室', dataIndex: 'department', key: 'department' },
   ];
 
   const studentColumns = [
-    { title: '学号', dataIndex: 'student_no', key: 'student_no' },
     { title: '姓名', dataIndex: 'name', key: 'name' },
+    { title: '学号', dataIndex: 'student_no', key: 'student_no' },
     { title: '班级', dataIndex: 'class', key: 'class' },
   ];
 
   const topicColumns = [
-    { title: '题目ID', dataIndex: 'id', key: 'id' },
-    { title: '题目名称', dataIndex: 'title', key: 'title' },
-    { title: '指导教师', dataIndex: 'teacher_name', key: 'teacher_name' },
+    { 
+      title: '指导教师',
+      dataIndex: 'teacher_name', 
+      key: 'teacher_name',
+      render: (_, record) => (
+        <span>{record.teacher?.name || '-'}</span>
+      ),
+      width: 150  // 设置固定宽度
+    },
+    { 
+      title: '题目名称', 
+      dataIndex: 'title', 
+      key: 'title',
+      width: 400
+    },
+    { 
+      title: '简介', 
+      dataIndex: 'summary', 
+      key: 'summary',
+      // ellipsis: true  // 超出宽度显示省略号
+    },
   ];
 
   const applyColumns = [

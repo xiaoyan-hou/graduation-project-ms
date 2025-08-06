@@ -40,7 +40,16 @@ export const studentApi = {
       }
     });
   },
-  getStudents: () => api.get('/students')
+  getStudents: async () => {
+    try {
+        const response = await api.get('/students');
+        return response.data;
+      } catch (error) {
+        console.error('获取学生列表失败:', error);
+        // 返回空数组
+        return { data: []};
+      }
+  }
 };
 
 // 毕设题目相关API
@@ -59,10 +68,10 @@ export const topicApi = {
     try {
       const response = await api.get('/topics');
     //   console.log('获取的题目列表:', response.data);
-      return response;
+      return response.data;
     } catch (error) {
       console.error('获取题目列表失败:', error);
-      throw error;
+      return { data: []};
     }
   },
   // 申请毕设题目

@@ -1,22 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Button, message } from 'antd';
-import { topicApi } from '../api';
+import { Table, Tabs, Tag, message, Button } from 'antd';
+import { topicApi, applyApi } from '../api';
 
-const { getTopics, applyTopic } = topicApi;
+const { TabPane } = Tabs;
+
 const StudentPage = () => {
+  const [activeKey, setActiveKey] = useState('topics');
   const [topics, setTopics] = useState([]);
+  const [applies, setApplies] = useState([]);
   const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    fetchTopics();
-  }, []);
 
   const fetchTopics = async () => {
     setLoading(true);
     try {
-      const topicsRes = await getTopics();
-      console.log(topicsRes);
-      setTopics(topicsRes.data.data);
+      const res = await topicApi.getTopics();
+      setTopics(res.data || []);
     } catch (error) {
       message.error('获取题目列表失败');
     } finally {
@@ -24,72 +22,115 @@ const StudentPage = () => {
     }
   };
 
-  const handleApply = async (record) => {
+  const fetchApplies = async () => {
+    setLoading(true);
     try {
-      
-      const { id: topicId, title: topicTitle, teacher } = record;
-      // 从localStorage中获取教师信息
-      const { id: teacherId, name: teacherName } = teacher;
-      // 从localStorage中获取学生信息   
-    //   const studentId = localStorage.getItem('studentId');
-    //   const studentName = localStorage.getItem('studentName');
-      const studentId = 4;
-      const studentName = '解梦莹';
-      await applyTopic(topicId, teacherId, studentId, studentName, teacherName, topicTitle);
-      message.success('申请成功');
-      // 直接更新本地状态而不是重新获取数据
-      setTopics(topics.map(topic => 
-        topic.id === topicId ? { ...topic, applied: true } : topic
-      ));
+      const res = await applyApi.getApplies();
+      setApplies(res.data || []);
     } catch (error) {
-      message.error('申请失败');
+      message.error('获取申请列表失败');
+    } finally {
+      setLoading(false);
     }
   };
 
-  // 表格列配置保持不变
-  const columns = [
-    {
-      title: '题目名称',
-      dataIndex: 'title',
-      key: 'title',
-      width: 350,
+  const loadTabData = (key) => {
+    if (key === 'topics') fetchTopics();
+    else if (key === 'applies') fetchApplies();
+  };
+
+  useEffect(() => {
+    loadTabData(activeKey);
+  }, [activeKey]);
+
+  const handleApply = async (topicId) => {
+    try {
+      // 这里需要获取当前学生信息
+      const studentId = 1; // 临时写死，实际应从登录信息获取
+      const studentName = '张三'; // 临时写死
+      
+      await topicApi.applyTopic(
+        topicId,
+        null, // teacherId
+        studentId,
+        studentName,
+        null, // teacherName
+        topics.find(t => t.id === topicId)?.title || ''
+      );
+      message.success('申请成功');
+      fetchApplies();
+    } catch (error) {
+      message.error(error.message || '申请失败');
+    }
+  };
+
+  const topicColumns = [
+    { 
+        title: '指导教师', 
+        dataIndex: 'teacher_name', // 或 teacher.name
+        key: 'teacher_name',
+        width: 150,
+        render: (_, record) => record.teacher?.name || '--'
     },
-    {
-      title: '指导教师',
-      dataIndex: ['teacher', 'name'],
-      key: 'teacher',
-      width: 150,
-    },
-    {
-      title: '研究方向',
-      dataIndex: ['teacher', 'research'],
-      key: 'research',
-      width: 200,
-    },
+    { title: '题目名称', dataIndex: 'title', key: 'title', width: 400 },
+    { title: '简介', dataIndex: 'summary', key: 'summary' },
     {
       title: '操作',
       key: 'action',
+      width: 150,
       render: (_, record) => (
         <Button 
-          type="primary" 
-          onClick={() => handleApply(record)}
-          disabled={record.applied}
+          type="primary"
+          onClick={() => handleApply(record.id)}
+          disabled={applies.some(a => a.topic_id === record.id)}
         >
-          {record.applied ? '已申请' : '申请'}
+          申请
         </Button>
       ),
     },
   ];
 
+  const applyColumns = [
+    { title: '题目名称', dataIndex: 'topic_title', key: 'topic_title' },
+    { title: '指导教师', dataIndex: 'teacher_name', key: 'teacher_name' },
+    { 
+      title: '状态', 
+      dataIndex: 'status', 
+      key: 'status',
+      render: status => {
+        let color = status === 'APPROVED' ? 'green' : 
+                   status === 'REJECTED' ? 'red' : 'orange';
+        return <Tag color={color}>{status}</Tag>;
+      }
+    },
+    { 
+        title: '申请时间', 
+        dataIndex: 'apply_time', 
+        key: 'apply_time',
+        render: date => new Date(date).toLocaleString()
+     },
+  ];
+
   return (
     <div style={{ padding: 24 }}>
-      <h2>毕设题目列表</h2>
-      <Table 
-        columns={columns} 
-        dataSource={topics} 
-        rowKey="id"
-        loading={loading}
-      />
+      <Tabs activeKey={activeKey} onChange={setActiveKey}>
+        <TabPane tab="毕设题目" key="topics">
+          <Table 
+            columns={topicColumns} 
+            dataSource={topics} 
+            loading={loading}
+            rowKey="id"
+          />
+        </TabPane>
+        <TabPane tab="我的申请" key="applies">
+          <Table 
+            columns={applyColumns} 
+            dataSource={applies} 
+            loading={loading}
+            rowKey="id"
+          />
+        </TabPane>
+      </Tabs>
     </div>
   );
 };
