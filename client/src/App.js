@@ -1,51 +1,59 @@
 import React, { useState } from 'react';
-import { Layout, Menu, Dropdown, Button } from 'antd';
-import { UserOutlined } from '@ant-design/icons';
-import AdminPage from './pages/AdminPage';
-import TeacherPage from './pages/TeacherPage';
+import { BrowserRouter as Router, Routes, Route, useNavigate } from 'react-router-dom';
+import { Layout } from 'antd';
+import AppHeader from './components/AppHeader';
 import StudentPage from './pages/StudentPage';
+import TeacherPage from './pages/TeacherPage';
+import AdminPage from './pages/AdminPage';
 
-const { Header, Content } = Layout;
+const { Content } = Layout;
 
-const App = () => {
-  const [role, setRole] = useState('admin'); // 默认管理员
+const AppLayout = () => {
+  const [currentRole, setCurrentRole] = useState('student');
+  const navigate = useNavigate();
 
-  const roleMenu = (
-    <Menu onClick={({ key }) => setRole(key)}>
-      <Menu.Item key="admin">管理员</Menu.Item>
-      <Menu.Item key="teacher">教师</Menu.Item>
-      <Menu.Item key="student">学生</Menu.Item>
-    </Menu>
-  );
-
-  const renderPage = () => {
-    switch (role) {
-      case 'admin':
-        return <AdminPage />;
-      case 'teacher':
-        return <TeacherPage />;
+  const handleRoleChange = (role) => {
+    setCurrentRole(role);
+    // 根据角色跳转到对应页面
+    switch(role) {
       case 'student':
-        return <StudentPage />;
+        navigate('/student');
+        break;
+      case 'teacher':
+        navigate('/teacher');
+        break;
+      case 'admin':
+        navigate('/admin');
+        break;
       default:
-        return <AdminPage />;
+        navigate('/');
     }
   };
 
   return (
     <Layout>
-      <Header style={{ display: 'flex', justifyContent: 'space-between' }}>
-        <div style={{ color: 'white', fontSize: '18px' }}>毕业设计管理系统</div>
-        <Dropdown overlay={roleMenu} placement="bottomRight">
-          <Button type="primary" icon={<UserOutlined />}>
-            {role === 'admin' ? '管理员' : role === 'teacher' ? '教师' : '学生'}
-          </Button>
-        </Dropdown>
-      </Header>
-      <Content style={{ padding: '24px', minHeight: 'calc(100vh - 64px)' }}>
-        {renderPage()}
+   
+      <AppHeader 
+        user={{ role: currentRole, name: '王小明' }}
+        onRoleChange={handleRoleChange}
+      />
+      <Content style={{ padding: '24px' }}>
+        <Routes>
+          <Route path="/student" element={<StudentPage />} />
+          <Route path="/teacher" element={<TeacherPage />} />
+          <Route path="/admin" element={<AdminPage />} />
+        </Routes>
       </Content>
     </Layout>
   );
 };
+
+function App() {
+  return (
+    <Router>
+      <AppLayout />
+    </Router>
+  );
+}
 
 export default App;
