@@ -47,7 +47,8 @@ const User = sequelize.define('user', {
     allowNull: true
   },
   role: {
-    type: DataTypes.ENUM('admin', 'teacher', 'student'),
+    // type: DataTypes.ENUM('admin', 'teacher', 'student'),
+    type: DataTypes.STRING(100),
     defaultValue: 'student'
   }
 }, {
@@ -59,7 +60,7 @@ const Role = sequelize.define('role', {
   code: {
     type: DataTypes.STRING(20),
     allowNull: false,
-    unique: true
+    // unique: true
   },
   name: {
     type: DataTypes.STRING(30)
@@ -88,72 +89,72 @@ const UserRole = sequelize.define('user_role', {
   ]
 });
 
-// 权限表
-const Permission = sequelize.define('permission', {
-  code: {
-    type: DataTypes.STRING(100),
-    allowNull: false,
-    unique: true
-  },
-  name: {
-    type: DataTypes.STRING(100)
-  }
-}, {
-  timestamps: false
-});
+// 权限表， 简化rabc模型只使用用户和角色
+// const Permission = sequelize.define('permission', {
+//   code: {
+//     type: DataTypes.STRING(100),
+//     allowNull: false,
+//     unique: true
+//   },
+//   name: {
+//     type: DataTypes.STRING(100)
+//   }
+// }, {
+//   timestamps: false
+// });
 
 // 角色权限关联表
-const RolePermission = sequelize.define('role_permission', {
-  role_id: {
-    type: DataTypes.INTEGER,
-    allowNull: false
-  },
-  permission_id: {
-    type: DataTypes.INTEGER,
-    allowNull: false
-  }
-}, {
-  timestamps: false,
-  indexes: [
-    {
-      unique: true,
-      fields: ['role_id', 'permission_id']
-    }
-  ]
-});
+// const RolePermission = sequelize.define('role_permission', {
+//   role_id: {
+//     type: DataTypes.INTEGER,
+//     allowNull: false
+//   },
+//   permission_id: {
+//     type: DataTypes.INTEGER,
+//     allowNull: false
+//   }
+// }, {
+//   timestamps: false,
+//   indexes: [
+//     {
+//       unique: true,
+//       fields: ['role_id', 'permission_id']
+//     }
+//   ]
+// });
 
 // 角色数据范围表
-const RoleDataScope = sequelize.define('role_data_scope', {
-  role_id: {
-    type: DataTypes.INTEGER,
-    allowNull: false
-  },
-  scope_type: {
-    type: DataTypes.ENUM('ALL', 'OWN', 'DEPT'),
-    allowNull: false
-  },
-  scope_value: {
-    type: DataTypes.STRING(100)
-  }
-}, {
-  timestamps: false,
-  indexes: [
-    {
-      unique: true,
-      fields: ['role_id', 'scope_type']
-    }
-  ]
-});
+// const RoleDataScope = sequelize.define('role_data_scope', {
+//   role_id: {
+//     type: DataTypes.INTEGER,
+//     allowNull: false
+//   },
+//   scope_type: {
+//     type: DataTypes.ENUM('ALL', 'OWN', 'DEPT'),
+//     allowNull: false
+//   },
+//   scope_value: {
+//     type: DataTypes.STRING(100)
+//   }
+// }, {
+//   timestamps: false,
+//   indexes: [
+//     {
+//       unique: true,
+//       fields: ['role_id', 'scope_type']
+//     }
+//   ]
+// });
 
 // 定义关联关系
 User.belongsToMany(Role, { through: UserRole });
 Role.belongsToMany(User, { through: UserRole });
 
-Role.belongsToMany(Permission, { through: RolePermission });
-Permission.belongsToMany(Role, { through: RolePermission });
+// Role.belongsToMany(Permission, { through: RolePermission });
+// Permission.belongsToMany(Role, { through: RolePermission });
 
-Role.hasOne(RoleDataScope);
-RoleDataScope.belongsTo(Role);
+// Role.hasOne(RoleDataScope);
+// RoleDataScope.belongsTo(Role);
 
 
 // 定义教师模型
@@ -300,10 +301,10 @@ module.exports = {
   sequelize,
   User,
   Role,
-  Permission,
+  // Permission,
   UserRole,
-  RolePermission,
-  RoleDataScope,
+  // RolePermission,
+  // RoleDataScope,
   Teacher,
   Student,
   Topic,

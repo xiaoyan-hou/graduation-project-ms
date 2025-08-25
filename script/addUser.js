@@ -1,6 +1,6 @@
 // addUser.js
 const bcrypt = require('bcryptjs');
-const { User } = require('./models');   // 指向你的 Sequelize 模型文件
+const { User } = require('../models');   // 指向你的 Sequelize 模型文件
 
 (async () => {
   await User.create({

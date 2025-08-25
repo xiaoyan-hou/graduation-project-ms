@@ -14,22 +14,22 @@ const login = async (req, res) => {
       where: { userno },
     //   include: [{
     //     model: Role,
+    //     as: 'roles', // 明确指定关联别名
     //     through: { attributes: [] },
-    //     include: [{
-    //       model: Permission,
-    //       through: { attributes: [] }
-    //     }]
+        // include: [{
+        //   model: Permission,
+        //   through: { attributes: [] }
+        // }]
     //   }]
     });
 
-    console.log('controller user', user);
     if (!user) {
       return res.status(401).json({ message: '用户名或密码错误' });
     }
 
     // 验证密码
     const isMatch = await user.comparePassword(password);
-    console.log('controller isMatch', isMatch, password);
+    // console.log('controller isMatch', isMatch, password);
     if (!isMatch) {
       return res.status(401).json({ message: '用户名或密码错误' });
     }
@@ -53,7 +53,7 @@ const login = async (req, res) => {
         id: user.id,
         userno: user.userno,
         username: user.username,
-        role: user.role
+        role: (user.role || '').split(',')
       },
     //   permissions
     });

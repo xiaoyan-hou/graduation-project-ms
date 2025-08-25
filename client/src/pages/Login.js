@@ -24,11 +24,13 @@ const Login = () => {
 
             message.success('登录成功');
             // 登录成功后跳转到对应的角色首页，但是需要考虑一个用户多个角色
-            if (user.role === 'admin') {
+            // console.log('user.role', user.role);
+            const role = Array.isArray(user.role) ? user.role[0] : user.role;
+            if (role === 'admin') {
                 navigate('/admin');
-            }  else if (user.role === 'teacher') {
+            }  else if (role === 'teacher') {
                 navigate('/teacher');
-            }   else if (user.role === 'student') {
+            }   else if (role === 'student') {
                 navigate('/student');
             } else {
                 navigate('/');
