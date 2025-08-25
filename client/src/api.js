@@ -1,10 +1,51 @@
 import axios from 'axios';
-// import * as XLSX from 'xlsx';
 
 const api = axios.create({
-  baseURL: 'http://localhost:5000/api',
-  timeout: 1000
+  baseURL: process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000/api',
+  timeout: 5000
 });
+
+// 请求拦截器 - 添加token
+api.interceptors.request.use(config => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+}, error => {
+  return Promise.reject(error);
+});
+
+// 响应拦截器 - 处理错误
+// api.interceptors.response.use(response => {
+//   return response.data;
+// }, error => {
+//   if (error.response?.status === 401) {
+//     // token过期或无效，跳转到登录页
+//     localStorage.removeItem('token');
+//     localStorage.removeItem('user');
+//     window.location.href = '/login';
+//   }
+//   return Promise.reject(error);
+// });
+
+// 认证相关API
+export const login = async (data) => {
+  console.log('api登录接口接收到的数据:', data);
+  try {
+    const res = await api.post('/auth/login', data);
+    console.log('api登录接口返回的数据:', res);
+    return res;
+  } catch (error) {
+    console.error('登录接口错误:', error);
+    throw error;
+  }
+}
+
+export const authApi = {
+  login,
+  getProfile: () => api.get('/auth/profile')
+};
 
 // 教师相关API
 export const teacherApi = {
@@ -20,11 +61,11 @@ export const teacherApi = {
   getTeachers: async () => {
     try {
       const response = await api.get('/teachers');
-      console.log('api获取的教师列表:', response.data);
+      console.log('api获取的教师列表:', response);
       return response.data;
     } catch (error) {
       console.error('获取教师列表失败:', error);
-      return { data: []};
+      return [];
     }
   }
 };
@@ -47,7 +88,7 @@ export const studentApi = {
       } catch (error) {
         console.error('获取学生列表失败:', error);
         // 返回空数组
-        return { data: []};
+        return [];
       }
   }
 };
@@ -71,7 +112,7 @@ export const topicApi = {
       return response.data;
     } catch (error) {
       console.error('获取题目列表失败:', error);
-      return { data: []};
+      return [];
     }
   },
   // 申请毕设题目
@@ -120,12 +161,12 @@ export const applyApi = {
     try {
       const response = await api.get('/applies');
       // 确保返回的是数组
-      console.log('获取的申请列表:', response.data);
+      console.log('获取的申请列表:', response);
       return response.data;
     } catch (error) {
       console.error('获取申请列表失败:', error);
       // 返回空数组
-      return { data: []};
+      return [];
     }
   }
 };

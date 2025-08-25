@@ -1,4 +1,6 @@
 const { Sequelize, DataTypes } = require('sequelize');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 const dotenv = require('dotenv');
 
 dotenv.config();
@@ -16,12 +18,149 @@ const sequelize = new Sequelize(
   }
 );
 
+// 用户表
+const User = sequelize.define('user', {
+  // Sequelize 模型片段
+  userno: {
+    type: DataTypes.STRING(20),
+    allowNull: false,
+    // unique: true,
+    comment: '全局唯一账号编号'
+  },
+  username: {
+    type: DataTypes.STRING(50),
+    allowNull: false
+  },
+  password: {
+    type: DataTypes.STRING(255),
+    allowNull: false
+  },
+  phone: {
+    type: DataTypes.STRING(20)
+  },
+  email: {
+    type: DataTypes.STRING(100),
+    allowNull: true
+  },
+  vx: {
+    type: DataTypes.STRING(100),
+    allowNull: true
+  },
+  role: {
+    type: DataTypes.ENUM('admin', 'teacher', 'student'),
+    defaultValue: 'student'
+  }
+}, {
+  timestamps: true
+});
+
+// 角色表
+const Role = sequelize.define('role', {
+  code: {
+    type: DataTypes.STRING(20),
+    allowNull: false,
+    unique: true
+  },
+  name: {
+    type: DataTypes.STRING(30)
+  }
+}, {
+  timestamps: false
+});
+
+// 用户角色关联表
+const UserRole = sequelize.define('user_role', {
+  user_id: {
+    type: DataTypes.INTEGER,
+    allowNull: false
+  },
+  role_id: {
+    type: DataTypes.INTEGER,
+    allowNull: false
+  }
+}, {
+  timestamps: false,
+  indexes: [
+    {
+      unique: true,
+      fields: ['user_id', 'role_id']
+    }
+  ]
+});
+
+// 权限表
+const Permission = sequelize.define('permission', {
+  code: {
+    type: DataTypes.STRING(100),
+    allowNull: false,
+    unique: true
+  },
+  name: {
+    type: DataTypes.STRING(100)
+  }
+}, {
+  timestamps: false
+});
+
+// 角色权限关联表
+const RolePermission = sequelize.define('role_permission', {
+  role_id: {
+    type: DataTypes.INTEGER,
+    allowNull: false
+  },
+  permission_id: {
+    type: DataTypes.INTEGER,
+    allowNull: false
+  }
+}, {
+  timestamps: false,
+  indexes: [
+    {
+      unique: true,
+      fields: ['role_id', 'permission_id']
+    }
+  ]
+});
+
+// 角色数据范围表
+const RoleDataScope = sequelize.define('role_data_scope', {
+  role_id: {
+    type: DataTypes.INTEGER,
+    allowNull: false
+  },
+  scope_type: {
+    type: DataTypes.ENUM('ALL', 'OWN', 'DEPT'),
+    allowNull: false
+  },
+  scope_value: {
+    type: DataTypes.STRING(100)
+  }
+}, {
+  timestamps: false,
+  indexes: [
+    {
+      unique: true,
+      fields: ['role_id', 'scope_type']
+    }
+  ]
+});
+
+// 定义关联关系
+User.belongsToMany(Role, { through: UserRole });
+Role.belongsToMany(User, { through: UserRole });
+
+Role.belongsToMany(Permission, { through: RolePermission });
+Permission.belongsToMany(Role, { through: RolePermission });
+
+Role.hasOne(RoleDataScope);
+RoleDataScope.belongsTo(Role);
+
+
 // 定义教师模型
 const Teacher = sequelize.define('teacher', {
   teacher_no: {
     type: DataTypes.CHAR(20),
-    allowNull: false,
-    unique: true
+    allowNull: false
   },
   name: {
     type: DataTypes.STRING(30),
@@ -48,7 +187,7 @@ const Student = sequelize.define('student', {
   student_no: {
     type: DataTypes.CHAR(12),
     allowNull: false,
-    unique: true
+    // unique: true
   },
   name: {
     type: DataTypes.STRING(30),
@@ -74,10 +213,7 @@ const Student = sequelize.define('student', {
   timestamps: false
 });
 
-// 修改同步配置为不自动修改表结构
-sequelize.sync()
-  .then(() => console.log('数据库模型已同步'))
-  .catch(err => console.error('数据库同步错误:', err));
+
 
 // 定义毕设题目模型
 const Topic = sequelize.define('topic', {
@@ -145,68 +281,36 @@ sequelize.sync({ alter: true })
   .then(() => console.log('数据库模型已同步'))
   .catch(err => console.error('数据库同步错误:', err));
 
+// 密码加密钩子
+User.beforeCreate(async (user) => {
+  user.password = await bcrypt.hash(user.password, 10);
+});
+
+// 密码验证方法
+User.prototype.comparePassword = async function(candidatePassword) {
+  return await bcrypt.compare(candidatePassword, this.password);
+};
+
+// 生成JWT方法
+User.prototype.generateAuthToken = function() {
+  return jwt.sign({ id: this.id }, process.env.SESSION_SECRET, { expiresIn: '1d' });
+};
+
 module.exports = {
+  sequelize,
+  User,
+  Role,
+  Permission,
+  UserRole,
+  RolePermission,
+  RoleDataScope,
   Teacher,
   Student,
   Topic,
   Apply
 };
 
-// 1. 基础角色模型
-const Role = sequelize.define('role', {
-  name: { type: DataTypes.STRING(30), allowNull: false, unique: true },
-  description: { type: DataTypes.STRING(200) }
-}, { timestamps: false });
 
-// 2. 权限模型（功能级）
-const Permission = sequelize.define('permission', {
-  code: { type: DataTypes.STRING(50), allowNull: false, unique: true },
-  name: { type: DataTypes.STRING(50), allowNull: false },
-  type: { type: DataTypes.ENUM('MENU', 'BUTTON', 'API'), allowNull: false },
-  resource: { type: DataTypes.STRING(200) } // 关联资源路径
-}, { timestamps: false });
-
-// 3. 数据权限模型
-const DataScope = sequelize.define('data_scope', {
-  type: { 
-    type: DataTypes.ENUM('ALL', 'DEPARTMENT', 'SELF'), 
-    allowNull: false 
-  },
-  customSql: { type: DataTypes.TEXT } // 自定义数据过滤SQL
-}, { timestamps: false });
-
-// 4. 用户-角色关联
-const UserRole = sequelize.define('user_role', {
-  userId: { type: DataTypes.INTEGER, allowNull: false },
-  roleId: { type: DataTypes.INTEGER, allowNull: false }
-}, { timestamps: false });
-
-// 5. 角色-权限关联
-const RolePermission = sequelize.define('role_permission', {
-  roleId: { type: DataTypes.INTEGER, allowNull: false },
-  permissionId: { type: DataTypes.INTEGER, allowNull: false },
-  dataScopeId: { type: DataTypes.INTEGER } // 数据级权限控制
-}, { timestamps: false });
-
-// 定义关联关系
-// Replace User references with Teacher/Student polymorphic associations
-Role.belongsToMany(Teacher, { through: 'teacher_roles' });
-Role.belongsToMany(Student, { through: 'student_roles' });
-Teacher.belongsToMany(Role, { through: 'teacher_roles' });
-Student.belongsToMany(Role, { through: 'student_roles' });
-
-Role.belongsToMany(Permission, { through: RolePermission });
-Permission.belongsToMany(Role, { through: RolePermission });
-RolePermission.belongsTo(DataScope, { foreignKey: 'dataScopeId' });
-
-// 初始化基础角色
-const initRoles = async () => {
-  await Role.bulkCreate([
-    { name: 'admin', description: '系统管理员' },
-    { name: 'teacher', description: '指导教师' },
-    { name: 'student', description: '学生' }
-  ]);
-};
 
 
 // Example query to get teacher with roles
