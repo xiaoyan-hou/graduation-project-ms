@@ -3,9 +3,13 @@ const router = express.Router();
 const multer = require('multer');
 const xlsx = require('xlsx');
 const { Teacher, Student, Topic, Apply } = require('./models');
+const authRoutes = require('./routes/authRoutes');
 
 // 文件上传配置
 const upload = multer({ dest: 'uploads/' });
+
+// 挂载认证路由
+router.use('/auth', authRoutes);
 
 // 批量导入教师
 router.post('/teachers/import', upload.single('file'), async (req, res) => {

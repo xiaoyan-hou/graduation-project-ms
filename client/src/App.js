@@ -5,6 +5,7 @@ import AppHeader from './components/AppHeader';
 import StudentPage from './pages/StudentPage';
 import TeacherPage from './pages/TeacherPage';
 import AdminPage from './pages/AdminPage';
+import Login from './pages/Login';
 
 const { Content } = Layout;
 
@@ -39,6 +40,7 @@ const AppLayout = () => {
       />
       <Content style={{ padding: '24px' }}>
         <Routes>
+          <Route path="/login" element={<Login />} />
           <Route path="/student" element={<StudentPage />} />
           <Route path="/teacher" element={<TeacherPage />} />
           <Route path="/admin" element={<AdminPage />} />
