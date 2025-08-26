@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Table, Tabs, Tag, message, Button } from 'antd';
 import { topicApi, applyApi } from '../api';
+// import { Navigate } from 'react-router-dom';
 
 const { TabPane } = Tabs;
 
@@ -10,6 +11,21 @@ const StudentPage = () => {
   const [applies, setApplies] = useState([]);
   const [loading, setLoading] = useState(false);
 
+  const user = JSON.parse(localStorage.getItem('user'));
+  const isStudent = user?.role === 'student' || (Array.isArray(user?.role) && user?.role.includes('student'));
+  
+  useEffect(() => {
+    isStudent && loadTabData(activeKey);
+  }, [activeKey, isStudent]);
+
+  if (!isStudent) {
+    return (
+      <div style={{ padding: 24, textAlign: 'center' }}>
+        <h2>权限不足</h2>
+        <p>你不是学生，没有权限访问该页面</p>
+      </div>
+    );
+  }
   const fetchTopics = async () => {
     setLoading(true);
     try {
@@ -39,22 +55,24 @@ const StudentPage = () => {
     else if (key === 'applies') fetchApplies();
   };
 
-  useEffect(() => {
-    loadTabData(activeKey);
-  }, [activeKey]);
 
-  const handleApply = async (topicId) => {
+
+  const handleApply = async (record) => {
     try {
-      // 这里需要获取当前学生信息
-      const studentId = 1; // 临时写死，实际应从登录信息获取
-      const studentName = '张三'; // 临时写死
+      const user = JSON.parse(localStorage.getItem('user'));
+      const studentId = user?.id;
+      const studentName = user?.username;
       
+      // const topicId = record.id;
+      const { id: topicId,  teacher = {}} = record;
+      const { id: teacherId, name: teacherName } = teacher;
+      // console.log('apply record', record);  
       await topicApi.applyTopic(
         topicId,
-        null, // teacherId
+        teacherId,
         studentId,
         studentName,
-        null, // teacherName
+        teacherName,
         topics.find(t => t.id === topicId)?.title || ''
       );
       message.success('申请成功');
@@ -81,7 +99,7 @@ const StudentPage = () => {
       render: (_, record) => (
         <Button 
           type="primary"
-          onClick={() => handleApply(record.id)}
+          onClick={() => handleApply(record)}
           disabled={applies.some(a => a.topic_id === record.id)}
         >
           申请

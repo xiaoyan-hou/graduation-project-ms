@@ -3,7 +3,9 @@ import { Card, Select, Button, message } from 'antd';
 import { userApi } from '../api';
 
 const ProfilePage = () => {
-  const [role, setRole] = useState('student');
+  const user = JSON.parse(localStorage.getItem('user'));
+  console.log('user role' ,user.role)
+  const [role, setRole] = useState(user?.role || 'student');
   
   const handleRoleChange = async () => {
     try {

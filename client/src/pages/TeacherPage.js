@@ -6,9 +6,22 @@ const TeacherPage = () => {
   const [applies, setApplies] = useState([]);
   const [loading, setLoading] = useState(false);
 
+  const user = JSON.parse(localStorage.getItem('user'));
+  const isTeacher = user?.role === 'teacher' || (Array.isArray(user?.role) && user?.role.includes('teacher'));
+  
   useEffect(() => {
-    fetchApplies();
-  }, []);
+    isTeacher && fetchApplies();
+  }, [isTeacher]);
+
+  if (!isTeacher) {
+    return (
+      <div style={{ padding: 24, textAlign: 'center' }}>
+        <h2>权限不足</h2>
+        <p>你不是教师，没有权限访问该页面</p>
+      </div>
+    );
+  }
+
 
   const fetchApplies = async () => {
     setLoading(true);

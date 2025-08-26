@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { applyApi, teacherApi, studentApi, topicApi } from '../api';
 import { Table, Card, Button, Upload, message, Tabs } from 'antd';
 import { UploadOutlined } from '@ant-design/icons';
+// import { Navigate } from 'react-router-dom';
 
 const { TabPane } = Tabs;
 
@@ -14,6 +15,24 @@ const AdminPage = () => {
   const [topics, setTopics] = useState([]);
   const [applies, setApplies] = useState([]);
   const [loading, setLoading] = useState(false);
+
+  const user = JSON.parse(localStorage.getItem('user'));
+  const isAdmin = user?.role === 'admin' || (Array.isArray(user?.role) && user?.role.includes('admin'));
+  
+  useEffect(() => {
+    isAdmin && loadTabData(activeKey);
+  }, [activeKey, isAdmin]);
+
+
+  if (!isAdmin) {
+    return (
+      <div style={{ padding: 24, textAlign: 'center' }}>
+        <h2>权限不足</h2>
+        <p>你不是管理员，没有权限访问该页面</p>
+      </div>
+    );
+  }
+
 
   const loadTabData = async (key) => {
     setLoading(true);
@@ -47,9 +66,6 @@ const AdminPage = () => {
     }
   };
 
-  useEffect(() => {
-    loadTabData(activeKey);
-  }, [activeKey]);
 
   const handleImport = async (type, file) => {
     try {
