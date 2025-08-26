@@ -47,6 +47,21 @@ export const authApi = {
   getProfile: () => api.get('/auth/profile')
 };
 
+// 用户相关API
+export const userApi = {
+  // 获取用户信息
+  getUserInfo: (userId) => api.get(`/users/${userId}`),
+  
+  // 更新用户信息
+  updateUserInfo: (userId, data) => api.post(`/users/${userId}`, data),
+  
+  // 修改密码
+  changePassword: (userId, data) => api.post(`/users/${userId}/password`, data),
+  
+  // 更新用户角色
+  updateRole: (userId, role) => api.post(`/users/${userId}/role`, { role })
+};
+
 // 教师相关API
 export const teacherApi = {
   importTeachers: (file) => {

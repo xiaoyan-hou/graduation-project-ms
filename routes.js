@@ -1,8 +1,10 @@
 const express = require('express');
+const bcrypt = require('bcryptjs');
+
 const router = express.Router();
 const multer = require('multer');
 const xlsx = require('xlsx');
-const { Teacher, Student, Topic, Apply } = require('./models');
+const { Teacher, Student, Topic, Apply, User } = require('./models');
 const authRoutes = require('./routes/authRoutes');
 
 // 文件上传配置
@@ -140,6 +142,71 @@ router.get('/applies', async (req, res) => {
       include: [Student, Teacher, Topic]
     });
     res.json({ success: true, data: applies });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// 更新用户信息
+router.post('/users/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const userData = req.body;
+    
+  console.log('userData', userData, userId);
+
+    const user = await User.findByPk(userId);
+    if (!user) {
+      return res.status(404).json({ success: false, message: '用户不存在' });
+    }
+    
+    await user.update(userData);
+    res.json({ success: true, data: user });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// 修改密码
+router.post('/users/:userId/password', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { oldPassword, newPassword } = req.body;
+    
+    const user = await User.findByPk(userId);
+    if (!user) {
+      return res.status(404).json({ success: false, message: '用户不存在' });
+    }
+    
+    // 验证旧密码
+    const isValid = await bcrypt.compare(oldPassword, user.password);
+    if (!isValid) {
+      return res.status(400).json({ success: false, message: '旧密码不正确' });
+    }
+    
+    // 更新密码
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await user.update({ password: hashedPassword });
+    
+    res.json({ success: true, message: '密码修改成功' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// 更新用户角色
+router.post('/users/:userId/role', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { role } = req.body;
+    
+    const user = await User.findByPk(userId);
+    if (!user) {
+      return res.status(404).json({ success: false, message: '用户不存在' });
+    }
+    
+    await user.update({ role });
+    res.json({ success: true, data: user });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }

@@ -6,6 +6,7 @@ import StudentPage from './pages/StudentPage';
 import TeacherPage from './pages/TeacherPage';
 import AdminPage from './pages/AdminPage';
 import Login from './pages/Login';
+import ProfilePage from './pages/ProfilePage';
 
 const { Content } = Layout;
 
@@ -30,6 +31,7 @@ const AppLayout = () => {
           <Route path="/student" element={<StudentPage />} />
           <Route path="/teacher" element={<TeacherPage />} />
           <Route path="/admin" element={<AdminPage />} />
+          <Route path='/profile' element={<ProfilePage />} />
         </Routes>
       </Content>
     </Layout>

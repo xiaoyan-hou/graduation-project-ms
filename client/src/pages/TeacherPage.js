@@ -1,16 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Button, message, Tag, Flex } from 'antd';
-import { applyApi } from '../api';
+import { Table, Button, message, Tag, Flex, Tabs } from 'antd';
+import { applyApi, topicApi } from '../api';
 
 const TeacherPage = () => {
   const [applies, setApplies] = useState([]);
+  const [topics, setTopics] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [activeKey, setActiveKey] = useState('applies');
 
   const user = JSON.parse(localStorage.getItem('user'));
   const isTeacher = user?.role === 'teacher' || (Array.isArray(user?.role) && user?.role.includes('teacher'));
   
   useEffect(() => {
-    isTeacher && fetchApplies();
+    if (isTeacher) {
+      fetchApplies();
+      fetchTopics();
+    }
   }, [isTeacher]);
 
   if (!isTeacher) {
@@ -30,6 +35,19 @@ const TeacherPage = () => {
       setApplies(apppliesRes.data);
     } catch (error) {
       message.error('获取申请列表失败');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchTopics = async () => {
+    setLoading(true);
+    try {
+      const user = JSON.parse(localStorage.getItem('user'));
+      const res = await topicApi.getTopicsByTeacher(user.id);
+      setTopics(res.data || []);
+    } catch (error) {
+      message.error('获取题目列表失败');
     } finally {
       setLoading(false);
     }
@@ -108,15 +126,49 @@ const TeacherPage = () => {
     },
   ];
 
+  const topicColumns = [
+    {
+      title: '题目名称',
+      dataIndex: 'title',
+      key: 'title',
+    },
+    {
+      title: '描述',
+      dataIndex: 'description',
+      key: 'description',
+    },
+    {
+      title: '操作',
+      key: 'action',
+      render: (_, record) => (
+        <Flex gap="small" wrap>
+          <Button type="primary">编辑</Button>
+          <Button type="primary" danger>删除</Button>
+        </Flex>
+      ),
+    },
+  ];
+
   return (
     <div style={{ padding: 24 }}>
-      <h2>学生申请列表</h2>
-      <Table 
-        columns={columns} 
-        dataSource={applies} 
-        rowKey="id"
-        loading={loading}
-      />
+      <Tabs activeKey={activeKey} onChange={setActiveKey}>
+        <Tabs.TabPane tab="学生申请列表" key="applies">
+          <Table 
+            columns={columns} 
+            dataSource={applies} 
+            rowKey="id"
+            loading={loading}
+          />
+        </Tabs.TabPane>
+        <Tabs.TabPane tab="我的毕设题目" key="topics">
+          <Table 
+            columns={topicColumns} 
+            dataSource={topics} 
+            rowKey="id"
+            loading={loading}
+          />
+        </Tabs.TabPane>
+      </Tabs>
     </div>
   );
 };
