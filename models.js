@@ -161,7 +161,8 @@ Role.belongsToMany(User, { through: UserRole });
 const Teacher = sequelize.define('teacher', {
   teacher_no: {
     type: DataTypes.CHAR(20),
-    allowNull: false
+    allowNull: false,
+    unique: true
   },
   name: {
     type: DataTypes.STRING(30),
@@ -180,7 +181,13 @@ const Teacher = sequelize.define('teacher', {
   }
 }, {
     tableName: 'teacher',   // 强制单数
-    timestamps: false
+    timestamps: false,
+    indexes: [
+      {
+        unique: true,
+        fields: ['teacher_no']
+      }
+    ]
 });
 
 // 定义学生模型
