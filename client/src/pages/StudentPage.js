@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Tabs, Tag, message, Button } from 'antd';
+import { Table, Tabs, Tag, message, Button, Input } from 'antd';
 import { topicApi, applyApi } from '../api';
 // import { Navigate } from 'react-router-dom';
 
@@ -10,6 +10,8 @@ const StudentPage = () => {
   const [topics, setTopics] = useState([]);
   const [applies, setApplies] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [teacherFilter, setTeacherFilter] = useState('');
+  const [titleFilter, setTitleFilter] = useState('');
 
   const user = JSON.parse(localStorage.getItem('user'));
   const isStudent = user?.role === 'student' || (Array.isArray(user?.role) && user?.role.includes('student'));
@@ -30,7 +32,7 @@ const StudentPage = () => {
     setLoading(true);
     try {
       const res = await topicApi.getTopics();
-      setTopics(res.data || []);
+      setTopics(res || []);
     } catch (error) {
       message.error('获取题目列表失败');
     } finally {
@@ -41,8 +43,9 @@ const StudentPage = () => {
   const fetchApplies = async () => {
     setLoading(true);
     try {
-      const res = await applyApi.getApplies();
-      setApplies(res.data || []);
+      const user = JSON.parse(localStorage.getItem('user'));
+      const res = await applyApi.getAppliesByStudent(user.userno);
+      setApplies(res || []);
     } catch (error) {
       message.error('获取申请列表失败');
     } finally {
@@ -57,20 +60,31 @@ const StudentPage = () => {
 
 
 
+  // 修改后的handleApply方法
   const handleApply = async (record) => {
     try {
       const user = JSON.parse(localStorage.getItem('user'));
-      const studentId = user?.id;
+      const studentNo = user?.userno;
       const studentName = user?.username;
       
-      // const topicId = record.id;
-      const { id: topicId,  teacher = {}} = record;
-      const { id: teacherId, name: teacherName } = teacher;
-      // console.log('apply record', record);  
+      // 检查是否已有非拒绝状态的申请
+      const hasActiveApply = applies.some(a => 
+        a.student_no === studentNo && a.status !== 'REJECTED'
+      );
+      
+      if (hasActiveApply) {
+        message.warning('你已有一个正在处理中的申请，请等待审批结果');
+        return;
+      }
+      
+      const { id: topicId, teacher = {}} = record;
+      const teacherNo = teacher?.teacher_no;
+      const teacherName = teacher?.name;
+      
       await topicApi.applyTopic(
         topicId,
-        teacherId,
-        studentId,
+        teacherNo,
+        studentNo,
         studentName,
         teacherName,
         topics.find(t => t.id === topicId)?.title || ''
@@ -80,6 +94,11 @@ const StudentPage = () => {
     } catch (error) {
       message.error(error.message || '申请失败');
     }
+  };
+
+  const   isTopicDisabled = (record) => {
+    // const topic = topics.find(t => t.id === topicId);
+    return record?.apply_status === 'PENDING' || record?.apply_status === 'APPROVED';
   };
 
   const topicColumns = [
@@ -100,7 +119,7 @@ const StudentPage = () => {
         <Button 
           type="primary"
           onClick={() => handleApply(record)}
-          disabled={applies.some(a => a.topic_id === record.id)}
+          disabled={isTopicDisabled(record)}
         >
           申请
         </Button>
@@ -133,9 +152,29 @@ const StudentPage = () => {
     <div style={{ padding: 24 }}>
       <Tabs activeKey={activeKey} onChange={setActiveKey}>
         <TabPane tab="毕设题目" key="topics">
+          <div style={{ marginBottom: 16 }}>
+            <Input
+              placeholder="筛选老师姓名"
+              value={teacherFilter}
+              onChange={e => setTeacherFilter(e.target.value)}
+              style={{ width: 200, marginRight: 8 }}
+            />
+            <Input
+              placeholder="筛选题目"
+              value={titleFilter}
+              onChange={e => setTitleFilter(e.target.value)}
+              style={{ width: 200 }}
+            />
+          </div>
           <Table 
             columns={topicColumns} 
-            dataSource={topics} 
+            dataSource={topics.filter(topic => {
+              const matchesTeacher = teacherFilter === '' || 
+                (topic.teacher?.name || '').toLowerCase().includes(teacherFilter.toLowerCase());
+              const matchesTitle = titleFilter === '' || 
+                (topic.title || '').toLowerCase().includes(titleFilter.toLowerCase());
+              return matchesTeacher && matchesTitle;
+            })} 
             loading={loading}
             rowKey="id"
           />

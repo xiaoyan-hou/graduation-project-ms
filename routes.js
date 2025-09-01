@@ -61,11 +61,11 @@ router.post('/topics/import', upload.single('file'), async (req, res) => {
 router.post('/apply', async (req, res) => {
   try {
     console.log('req body' , req.body);
-    const { student_id, student_name,  teacher_id, teacher_name, topic_id, topic_title } = req.body;
+    const { student_no, student_name,  teacher_no, teacher_name, topic_id, topic_title } = req.body;
     const apply = await Apply.create({
-      student_id,
+      student_no,
       student_name,
-      teacher_id,
+      teacher_no,
       teacher_name,
       topic_id,
       topic_title,
@@ -78,7 +78,7 @@ router.post('/apply', async (req, res) => {
 });
 
 // 教师处理申请
-router.put('/apply/:id', async (req, res) => {
+router.post('/apply/:id', async (req, res) => {
   try {
     const { status } = req.body;
     const apply = await Apply.findByPk(req.params.id);
@@ -103,6 +103,26 @@ router.put('/apply/:id', async (req, res) => {
   }
 });
 
+// 更新教师最多指导学生数
+router.post('/teachers/:teacherNo/max-students', async (req, res) => {
+  try {
+    const { teacherNo } = req.params;
+    const { max_students } = req.body;
+    
+    const teacher = await Teacher.findOne({ where: { teacher_no: teacherNo } });
+    if (!teacher) {
+      return res.status(404).json({ success: false, message: '教师不存在' });
+    }
+    
+    teacher.max_students = max_students;
+    await teacher.save();
+    
+    res.json({ success: true, data: teacher });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 // 获取教师列表
 router.get('/teachers', async (req, res) => {
   try {
@@ -116,8 +136,62 @@ router.get('/teachers', async (req, res) => {
 // 获取学生列表
 router.get('/students', async (req, res) => {
   try {
-    const students = await Student.findAll({include: [Teacher]});
-    res.json({ success: true, data: students });
+    const students = await Student.findAll({
+      include: [
+        Teacher,
+        {
+          model: Apply,
+          attributes: ['status', 'teacher_name', 'teacher_no'],
+          required: false
+        }
+      ]
+    });
+    console.log('get studnets',students[students.length-1].applies[0]);
+    const studentsWithStatus = students.map(student => {
+      const applyStatus = student.applies && student.applies.length > 0 
+        ? student.applies[0].status === 'APPROVED' ? 'completed' : 'pending'
+        : 'none';
+      
+      return {
+        ...student.toJSON(),
+        apply_status: applyStatus
+      };
+    });
+    
+    res.json({ success: true, data: studentsWithStatus });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// 获取教师所有题目
+router.get('/topics/teacher/:teacherNo', async (req, res) => {
+  try {
+    const { teacherNo } = req.params;
+    const topics = await Topic.findAll({
+      where: { teacher_no: teacherNo },
+      include: [
+        Teacher,
+        {
+          model: Apply,
+          attributes: ['id' ,'status', 'student_name', 'apply_time'],
+          required: false
+        }
+      ]
+    });
+    
+    const topicsWithStatus = topics.map(topic => {
+      const applyStatus = topic.applies && topic.applies.length > 0 
+        ? topic.applies[0].status 
+        : 'NONE';
+      
+      return {
+        ...topic.toJSON(),
+        apply_status: applyStatus
+      };
+    });
+    
+    res.json({ success: true, data: topicsWithStatus });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -127,9 +201,28 @@ router.get('/students', async (req, res) => {
 router.get('/topics', async (req, res) => {
   try {
     const topics = await Topic.findAll({
-      include: [Teacher]
+      include: [
+        Teacher,
+        {
+          model: Apply,
+          attributes: ['status'],
+          required: false
+        }
+      ]
     });
-    res.json({ success: true, data: topics });
+    
+    const topicsWithStatus = topics.map(topic => {
+      const applyStatus = topic.applies && topic.applies.length > 0 
+        ? topic.applies[0].status 
+        : 'NONE';
+      
+      return {
+        ...topic.toJSON(),
+        apply_status: applyStatus
+      };
+    });
+    
+    res.json({ success: true, data: topicsWithStatus });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -140,6 +233,20 @@ router.get('/applies', async (req, res) => {
   try {
     const applies = await Apply.findAll({
       include: [Student, Teacher, Topic]
+    });
+    res.json({ success: true, data: applies });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// 获取学生申请列表
+router.get('/applies/student/:studentNo', async (req, res) => {
+  try {
+    const { studentNo } = req.params;
+    const applies = await Apply.findAll({
+      where: { student_no: studentNo },
+      include: [Teacher, Topic]
     });
     res.json({ success: true, data: applies });
   } catch (error) {

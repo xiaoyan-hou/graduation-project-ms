@@ -162,7 +162,7 @@ const Teacher = sequelize.define('teacher', {
   teacher_no: {
     type: DataTypes.CHAR(20),
     allowNull: false,
-    unique: true
+    // unique: true
   },
   name: {
     type: DataTypes.STRING(30),
@@ -178,6 +178,12 @@ const Teacher = sequelize.define('teacher', {
   },
   research: {
     type: DataTypes.STRING(200)
+  },
+  max_students: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    defaultValue: 10,
+    comment: '每位老师最多指导的学生数量'
   }
 }, {
     tableName: 'teacher',   // 强制单数
@@ -251,8 +257,8 @@ const Apply = sequelize.define('apply', {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW
     },
-    student_id: { type: DataTypes.INTEGER, allowNull: false },
-    teacher_id: { type: DataTypes.INTEGER, allowNull: false },
+    student_no: { type: DataTypes.CHAR(12), allowNull: false },
+    teacher_no: { type: DataTypes.CHAR(20), allowNull: false },
     topic_id:   { type: DataTypes.INTEGER, allowNull: false },
     student_name: { type: DataTypes.CHAR(30), allowNull: false },
     teacher_name: { type: DataTypes.CHAR(30), allowNull: false },
@@ -275,11 +281,11 @@ Topic.belongsTo(Teacher, {
     onDelete: 'CASCADE'
 });
 
-Student.hasMany(Apply, { foreignKey: 'student_id' });
-Apply.belongsTo(Student, { foreignKey: { name: 'student_id', allowNull: false }, onDelete: 'CASCADE' });
+Student.hasMany(Apply, { foreignKey: 'student_no', sourceKey: 'student_no' });
+Apply.belongsTo(Student, { foreignKey: { name: 'student_no', allowNull: false }, targetKey: 'student_no', onDelete: 'CASCADE' });
 
-Teacher.hasMany(Apply, { foreignKey: 'teacher_id' });
-Apply.belongsTo(Teacher, { foreignKey: 'teacher_id' });
+Teacher.hasMany(Apply, { foreignKey: 'teacher_no', sourceKey: 'teacher_no' });
+Apply.belongsTo(Teacher, { foreignKey: 'teacher_no', targetKey: 'teacher_no' });
 
 Topic.hasMany(Apply, { foreignKey: 'topic_id' });
 Apply.belongsTo(Topic, { foreignKey: 'topic_id' });

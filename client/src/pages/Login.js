@@ -10,13 +10,13 @@ const Login = () => {
     const navigate = useNavigate();
 
     const onFinish = async (values) => {
-        console.log('Received values of form: ', values);
+        // console.log('Received values of form: ', values);
         try {
             setLoading(true);
-            console.log('befor login values', values);
+            // console.log('befor login values', values);
             const res = await login(values);
-            const { token, user, permissions } = res.data; // 解构respons
-            console.log('after login', token, user);
+            const { token, user, permissions } = res; // 解构respons
+            // console.log('after login', token, user);
             // 存储token和用户信息
             localStorage.setItem('token', token);
             localStorage.setItem('user', JSON.stringify(user));

@@ -2,6 +2,7 @@ import axios from 'axios';
 
 const api = axios.create({
   baseURL: process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000/api',
+  // baseURL: 'http://47.107.176.158:5000/api',
   timeout: 5000
 });
 
@@ -17,24 +18,22 @@ api.interceptors.request.use(config => {
 });
 
 // 响应拦截器 - 处理错误
-// api.interceptors.response.use(response => {
-//   return response.data;
-// }, error => {
-//   if (error.response?.status === 401) {
-//     // token过期或无效，跳转到登录页
-//     localStorage.removeItem('token');
-//     localStorage.removeItem('user');
-//     window.location.href = '/login';
-//   }
-//   return Promise.reject(error);
-// });
+api.interceptors.response.use(response => {
+  return response.data;
+}, error => {
+  if (error.response?.status === 401) {
+    // token过期或无效，跳转到登录页
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    window.location.href = '/login';
+  }
+  return Promise.reject(error);
+});
 
 // 认证相关API
 export const login = async (data) => {
-  console.log('api登录接口接收到的数据:', data);
   try {
     const res = await api.post('/auth/login', data);
-    console.log('api登录接口返回的数据:', res);
     return res;
   } catch (error) {
     console.error('登录接口错误:', error);
@@ -51,13 +50,13 @@ export const authApi = {
 export const userApi = {
   // 获取用户信息
   getUserInfo: (userId) => api.get(`/users/${userId}`),
-  
+
   // 更新用户信息
   updateUserInfo: (userId, data) => api.post(`/users/${userId}`, data),
-  
+
   // 修改密码
   changePassword: (userId, data) => api.post(`/users/${userId}/password`, data),
-  
+
   // 更新用户角色
   updateRole: (userId, role) => api.post(`/users/${userId}/role`, { role })
 };
@@ -76,13 +75,14 @@ export const teacherApi = {
   getTeachers: async () => {
     try {
       const response = await api.get('/teachers');
-      console.log('api获取的教师列表:', response);
+      // console.log('api获取的教师列表:', response);
       return response.data;
     } catch (error) {
       console.error('获取教师列表失败:', error);
       return [];
     }
-  }
+  },
+  updateMaxStudents: (teacherNo, maxStudents) => api.post(`/teachers/${teacherNo}/max-students`, { max_students: maxStudents })
 };
 
 // 学生相关API
@@ -98,13 +98,13 @@ export const studentApi = {
   },
   getStudents: async () => {
     try {
-        const response = await api.get('/students');
-        return response.data;
-      } catch (error) {
-        console.error('获取学生列表失败:', error);
-        // 返回空数组
-        return [];
-      }
+      const response = await api.get('/students');
+      return response.data;
+    } catch (error) {
+      console.error('获取学生列表失败:', error);
+      // 返回空数组
+      return [];
+    }
   }
 };
 
@@ -119,11 +119,22 @@ export const topicApi = {
       }
     });
   },
+  // 获取指定教师的毕设题目
+  getTopicsByTeacher: async (teacherNo) => {
+    try {
+      const response = await api.get(`/topics/teacher/${teacherNo}`);
+      console.log('获取的教师我的题目列表:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('获取教师题目列表失败:', error);
+      return [];
+    }
+  },
   // 获取所有毕设题目
   getTopics: async () => {
     try {
       const response = await api.get('/topics');
-    //   console.log('获取的题目列表:', response.data);
+      //   console.log('获取的题目列表:', response.data);
       return response.data;
     } catch (error) {
       console.error('获取题目列表失败:', error);
@@ -131,23 +142,28 @@ export const topicApi = {
     }
   },
   // 申请毕设题目
-  applyTopic: async (topicId, teacherId, studentId, studentName, teacherName, topicTitle) => {
+  applyTopic: async (topicId,
+    teacherNo,
+    studentNo,
+    studentName,
+    teacherName,
+    topicTitle) => {
     try {
       const response = await api.post('/apply', {
-        student_id: studentId,
-        teacher_id: teacherId,
+        student_no: studentNo,
+        teacher_no: teacherNo,
         topic_id: topicId,
         student_name: studentName,
         teacher_name: teacherName,
         topic_title: topicTitle
       });
-      
+
       return response.data;
     } catch (error) {
       throw error.response?.data || { message: '申请失败' };
     }
   },
-  
+
   // 在StudentPage组件中的使用示例
   handleApply: async (topic) => {
     try {
@@ -171,17 +187,29 @@ export const topicApi = {
 // 申请相关API
 export const applyApi = {
   createApply: (data) => api.post('/apply', data),
-  updateApply: (id, data) => api.put(`/apply/${id}`, data),
+  updateApply: (id, data) => api.post(`/apply/${id}`, data),
   getApplies: async () => {
     try {
       const response = await api.get('/applies');
       // 确保返回的是数组
-      console.log('获取的申请列表:', response);
+      console.log('获取的申请列表:', response.data);
       return response.data;
     } catch (error) {
       console.error('获取申请列表失败:', error);
-      // 返回空数组
       return [];
     }
-  }
-};
+  },
+  getAppliesByStudent: async (studentNo) => {
+    try {
+      console.log('获取学生申请列表的学生学号:', studentNo);
+      const response = await api.get(`/applies/student/${studentNo}`);
+      console.log('获取的我的申请列表:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('获取学生申请列表失败:', error);
+      return [];
+    }
+  },
+
+}
+
