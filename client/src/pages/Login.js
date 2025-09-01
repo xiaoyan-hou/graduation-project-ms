@@ -10,13 +10,13 @@ const Login = () => {
     const navigate = useNavigate();
 
     const onFinish = async (values) => {
-        console.log('Received values of form: ', values);
+        // console.log('Received values of form: ', values);
         try {
             setLoading(true);
-            console.log('befor login values', values);
+            // console.log('befor login values', values);
             const res = await login(values);
-            const { token, user, permissions } = res.data; // 解构respons
-            console.log('after login', token, user);
+            const { token, user, permissions } = res; // 解构respons
+            // console.log('after login', token, user);
             // 存储token和用户信息
             localStorage.setItem('token', token);
             localStorage.setItem('user', JSON.stringify(user));
@@ -24,11 +24,13 @@ const Login = () => {
 
             message.success('登录成功');
             // 登录成功后跳转到对应的角色首页，但是需要考虑一个用户多个角色
-            if (user.role === 'admin') {
+            // console.log('user.role', user.role);
+            const role = Array.isArray(user.role) ? user.role[0] : user.role;
+            if (role === 'admin') {
                 navigate('/admin');
-            }  else if (user.role === 'teacher') {
+            }  else if (role === 'teacher') {
                 navigate('/teacher');
-            }   else if (user.role === 'student') {
+            }   else if (role === 'student') {
                 navigate('/student');
             } else {
                 navigate('/');

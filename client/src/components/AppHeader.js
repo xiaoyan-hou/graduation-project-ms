@@ -15,6 +15,8 @@ const AppHeader = ({ user, onRoleChange }) => {
       navigate('/profile');
     } else if (key === 'logout') {
       // 处理退出登录逻辑
+      localStorage.removeItem('user');
+      navigate('/login');
     }
   };
 
@@ -23,14 +25,14 @@ const AppHeader = ({ user, onRoleChange }) => {
       // await userApi.updateRole(role);
       setCurrentRole(role);
       message.success(`角色已切换为${getRoleName(role)}`);
-      
+
       // 触发父组件的角色变更处理
       if (onRoleChange) {
         onRoleChange(role);
       }
-      
+
       // 根据角色跳转到对应页面
-      switch(role) {
+      switch (role) {
         case 'student':
           navigate('/student');
           break;
@@ -49,7 +51,7 @@ const AppHeader = ({ user, onRoleChange }) => {
   };
 
   const getRoleName = (role) => {
-    switch(role) {
+    switch (role) {
       case 'student': return '学生';
       case 'teacher': return '教师';
       case 'admin': return '管理员';
@@ -78,13 +80,13 @@ const AppHeader = ({ user, onRoleChange }) => {
 
   return (
     <Header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 24px' }}>
-       <div style={{ paddingLeft: '24px', fontSize: '18px', fontWeight: 'bold' , color: 'white'}}>
+      <div style={{ paddingLeft: '24px', fontSize: '18px', fontWeight: 'bold', color: 'white' }}>
         毕业设计管理系统
       </div>
       <Dropdown overlay={menu} trigger={['hover']}>
         <div style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
-          <Avatar 
-            icon={<UserOutlined />} 
+          <Avatar
+            icon={<UserOutlined />}
             style={{ marginRight: 8, backgroundColor: '#1890ff' }}
           />
           <span style={{ color: 'white' }}>{user?.name || '用户'}</span>

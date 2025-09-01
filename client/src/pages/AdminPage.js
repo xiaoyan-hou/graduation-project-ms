@@ -1,9 +1,8 @@
-
-
 import React, { useState, useEffect } from 'react';
 import { applyApi, teacherApi, studentApi, topicApi } from '../api';
-import { Table, Card, Button, Upload, message, Tabs } from 'antd';
+import { Table, Card, Button, Upload, message, Tabs, Select, Tag, Modal, InputNumber, Input } from 'antd';
 import { UploadOutlined } from '@ant-design/icons';
+// import { Navigate } from 'react-router-dom';
 
 const { TabPane } = Tabs;
 
@@ -15,28 +14,92 @@ const AdminPage = () => {
   const [applies, setApplies] = useState([]);
   const [loading, setLoading] = useState(false);
 
+  const [visible, setVisible] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState(null);
+  const [selectedTeacher, setSelectedTeacher] = useState(null);
+  const [selectedTopic, setSelectedTopic] = useState(null);
+  const [teacherTopics, setTeacherTopics] = useState([]);
+  const [teacherStudentsCount, setTeacherStudentsCount] = useState(0);
+
+  const handleAssignTeacher = async (student) => {
+    setSelectedStudent(student);
+    setVisible(true);
+  };
+
+  const handleTeacherChange = async (teacherId) => {
+    const teacher = teachers.find(t => t.teacher_no === teacherId);
+    setSelectedTeacher(teacher);
+    
+    // 获取该教师的题目
+    const topicsRes = await topicApi.getTopicsByTeacher(teacherId);
+    setTeacherTopics(topicsRes);
+    
+    // 获取该教师已有学生数
+    const countRes = await studentApi.getStudentsByTeacher(teacherId);
+    setTeacherStudentsCount(countRes.length);
+  };
+
+  const handleOk = async () => {
+    try {
+      if (!selectedTeacher || !selectedTopic) {
+        message.warning('请选择教师和题目');
+        return;
+      }
+      
+      await studentApi.assignTeacher({
+        student_no: selectedStudent.student_no,
+        teacher_no: selectedTeacher.teacher_no,
+        topic_id: selectedTopic.id
+      });
+      
+      message.success(`已为${selectedStudent.name}分配指导教师${selectedTeacher.name}`);
+      setVisible(false);
+      loadTabData('students');
+    } catch (error) {
+      message.error('分配指导教师失败');
+    }
+  };
+
+  const user = JSON.parse(localStorage.getItem('user'));
+  const isAdmin = user?.role === 'admin' || (Array.isArray(user?.role) && user?.role.includes('admin'));
+  
+  useEffect(() => {
+    isAdmin && loadTabData(activeKey);
+  }, [activeKey, isAdmin]);
+
+
+  if (!isAdmin) {
+    return (
+      <div style={{ padding: 24, textAlign: 'center' }}>
+        <h2>权限不足</h2>
+        <p>你不是管理员，没有权限访问该页面</p>
+      </div>
+    );
+  }
+
+
   const loadTabData = async (key) => {
     setLoading(true);
     try {
       switch (key) {
         case 'teachers':
           const teachersRes = await teacherApi.getTeachers();
-          console.log('teachersRes', teachersRes.data);
-          setTeachers(teachersRes.data || []);
+          // console.log('teachersRes', teachersRes);
+          setTeachers(teachersRes);
           break;
         case 'students':
           const studentsRes = await studentApi.getStudents();
-          console.log('studentsRes', studentsRes.data);
+          // console.log('studentsRes', studentsRes);
 
-          setStudents(studentsRes.data || []);
+          setStudents(studentsRes);
           break;
         case 'topics':
           const topicsRes = await topicApi.getTopics();
-          setTopics(topicsRes.data || []);
+          setTopics(topicsRes);
           break;
         case 'applies':
           const appliesRes = await applyApi.getApplies();
-          setApplies(appliesRes.data || []);
+          setApplies(appliesRes);
           break;
       }
     } catch (error) {
@@ -47,9 +110,6 @@ const AdminPage = () => {
     }
   };
 
-  useEffect(() => {
-    loadTabData(activeKey);
-  }, [activeKey]);
 
   const handleImport = async (type, file) => {
     try {
@@ -75,12 +135,71 @@ const AdminPage = () => {
     { title: '工号', dataIndex: 'teacher_no', key: 'teacher_no' },
     { title: '职称', dataIndex: 'title', key: 'title' },
     { title: '教研室', dataIndex: 'department', key: 'department' },
+    { 
+      title: '最多指导学生数', 
+      dataIndex: 'max_students', 
+      key: 'max_students',
+      render: (text, record) => (
+        <InputNumber 
+          min={1} 
+          max={20}
+          defaultValue={text || 10}
+          onPressEnter={async (e) => {
+            const value = e.target.value;
+            try {
+              await teacherApi.updateMaxStudents(record.teacher_no, value);
+              message.success('更新成功');
+              loadTabData('teachers'); // 刷新教师列表
+            } catch (error) {
+              message.error('更新失败');
+              console.error('更新max_students失败:', error);
+            }
+          }}
+        />
+      )
+    },
   ];
 
   const studentColumns = [
     { title: '姓名', dataIndex: 'name', key: 'name' },
     { title: '学号', dataIndex: 'student_no', key: 'student_no' },
     { title: '班级', dataIndex: 'class', key: 'class' },
+    {
+      title: '导师姓名', 
+      dataIndex: 'teacher_name', 
+      key: 'teacher_name',
+      render: (_, record) => {
+        const validApply = record.applies?.find(a => a.status !== 'reject');
+        return validApply?.teacher_name || '-';
+      }
+    },
+    { 
+      title: '选题状态', 
+      dataIndex: 'apply_status', 
+      key: 'apply_status',
+      render: (status) => {
+        const statusMap = {
+          'pending': { text: '教师审批中', color: 'orange' },
+          'none': { text: '未申请', color: 'red' },
+          'completed': { text: '已完成', color: 'green' }
+        };
+        const statusInfo = statusMap[status] || { text: '-', color: 'default' };
+        return <Tag color={statusInfo.color}>{statusInfo.text}</Tag>;
+      }
+    },
+    // {
+    //   title: '操作',
+    //   key: 'action',
+    //   width: 150,
+    //   render: (_, record) => (
+    //     <Button 
+    //       type="primary"
+    //       onClick={() => handleAssignTeacher(record)}
+    //     >
+    //       分配指导教师
+    //     </Button>
+    //   ),
+    // }
   ];
 
   const topicColumns = [
@@ -111,11 +230,51 @@ const AdminPage = () => {
     { title: '学生姓名', dataIndex: 'student_name', key: 'student_name' },
     { title: '教师姓名', dataIndex: 'teacher_name', key: 'teacher_name' },
     { title: '题目名称', dataIndex: 'topic_title', key: 'topic_title' },
-    { title: '申请状态', dataIndex: 'status', key: 'status' },
+    { title: '申请状态', dataIndex: 'apply_status', key: 'apply_status' },
   ];
 
   return (
     <div style={{ padding: 24 }}>
+      <Modal
+        title="分配指导教师"
+        visible={visible}
+        onOk={handleOk}
+        onCancel={() => setVisible(false)}
+        width={800}
+      >
+        <div style={{ marginBottom: 16 }}>
+          <span style={{ marginRight: 8 }}>选择教师:</span>
+          <Select
+            style={{ width: 200 }}
+            onChange={handleTeacherChange}
+            placeholder="请选择教师"
+          >
+            {teachers.map(teacher => (
+              <Select.Option key={teacher.teacher_no} value={teacher.teacher_no}>
+                {teacher.name} ({teacher.teacher_no})
+              </Select.Option>
+            ))}
+          </Select>
+        </div>
+        
+        {selectedTeacher && (
+          <div style={{ marginBottom: 16 }}>
+            <p>教师: {selectedTeacher.name} (已有{teacherStudentsCount}名学生)</p>
+            <span style={{ marginRight: 8 }}>选择题目:</span>
+            <Select
+              style={{ width: 400 }}
+              onChange={value => setSelectedTopic(teacherTopics.find(t => t.id === value))}
+              placeholder="请选择题目"
+            >
+              {teacherTopics.map(topic => (
+                <Select.Option key={topic.id} value={topic.id}>
+                  {topic.title}
+                </Select.Option>
+              ))}
+            </Select>
+          </div>
+        )}
+      </Modal>
       <Tabs activeKey={activeKey} onChange={setActiveKey}>
         <TabPane tab="教师管理" key="teachers">
           <Card 
@@ -139,12 +298,45 @@ const AdminPage = () => {
         <TabPane tab="学生管理" key="students">
           <Card 
             extra={
-              <Upload 
-                beforeUpload={(file) => handleImport('student', file)}
-                showUploadList={false}
-              >
-                <Button icon={<UploadOutlined />}>导入学生</Button>
-              </Upload>
+              <div>
+                <Select
+                  style={{ width: 150, marginRight: 10 }}
+                  placeholder="筛选选题状态"
+                  allowClear
+                  onChange={(value) => {
+                    if (!value) {
+                      loadTabData('students');
+                    } else {
+                      const filtered = students.filter(s => s.apply_status === value);
+                      setStudents(filtered);
+                    }
+                  }}
+                >
+                  <Select.Option value="pending">教师审批中</Select.Option>
+                  <Select.Option value="none">未申请</Select.Option>
+                  <Select.Option value="completed">已完成</Select.Option>
+                </Select>
+                <Input
+                  style={{ width: 150, marginRight: 10 }}
+                  placeholder="搜索学生姓名"
+                  allowClear
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (!value) {
+                      loadTabData('students');
+                    } else {
+                      const filtered = students.filter(s => s.name.includes(value));
+                      setStudents(filtered);
+                    }
+                  }}
+                />
+                <Upload 
+                  beforeUpload={(file) => handleImport('student', file)}
+                  showUploadList={false}
+                >
+                  <Button icon={<UploadOutlined />}>导入学生</Button>
+                </Upload>
+              </div>
             }
           >
             <Table 
