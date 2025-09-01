@@ -67,10 +67,15 @@ const StudentPage = () => {
       const studentNo = user?.userno;
       const studentName = user?.username;
       
+      // 确保获取最新申请记录
+      const latestApplies = await applyApi.getAppliesByStudent(studentNo);
+      
       // 检查是否已有非拒绝状态的申请
-      const hasActiveApply = applies.some(a => 
-        a.student_no === studentNo && a.status !== 'REJECTED'
-      );
+      const hasActiveApply = latestApplies.some(a => {
+        console.log('handleApply', a.student_no, studentNo, studentName);
+        console.log('hasActiveApply', a.student_no === studentNo && a.status !== 'REJECTED');
+        return a.student_no === studentNo && a.status !== 'REJECTED';
+      });
       
       if (hasActiveApply) {
         message.warning('你已有一个正在处理中的申请，请等待审批结果');

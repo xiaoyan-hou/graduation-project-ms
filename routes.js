@@ -60,7 +60,7 @@ router.post('/topics/import', upload.single('file'), async (req, res) => {
 // 学生申请毕设题目
 router.post('/apply', async (req, res) => {
   try {
-    console.log('req body' , req.body);
+    // console.log('req body' , req.body);
     const { student_no, student_name,  teacher_no, teacher_name, topic_id, topic_title } = req.body;
     const apply = await Apply.create({
       student_no,

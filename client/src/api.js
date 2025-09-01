@@ -203,7 +203,7 @@ export const applyApi = {
     try {
       console.log('获取学生申请列表的学生学号:', studentNo);
       const response = await api.get(`/applies/student/${studentNo}`);
-      console.log('获取的我的申请列表:', response.data);
+      // console.log('获取的我的申请列表:', response.data);
       return response.data;
     } catch (error) {
       console.error('获取学生申请列表失败:', error);
