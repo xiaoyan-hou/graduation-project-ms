@@ -3,7 +3,7 @@ const { Topic } = require('../models');
 
 (async () => {
   // 读取Excel文件
-  const workbook = xlsx.readFile('/Users/qy/Desktop/data/topic.xlsx');
+  const workbook = xlsx.readFile('/Users/qy/Desktop/data/topic-dianqi_updated.xlsx');
   const worksheet = workbook.Sheets[workbook.SheetNames[0]];
   const topics = xlsx.utils.sheet_to_json(worksheet);
 

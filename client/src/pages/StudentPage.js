@@ -66,23 +66,23 @@ const StudentPage = () => {
       const user = JSON.parse(localStorage.getItem('user'));
       const studentNo = user?.userno;
       const studentName = user?.username;
+      const studentClass = user?.student_info?.class || '';
       
       // 确保获取最新申请记录
       const latestApplies = await applyApi.getAppliesByStudent(studentNo);
       
       // 检查是否已有非拒绝状态的申请
       const hasActiveApply = latestApplies.some(a => {
-        console.log('handleApply', a.student_no, studentNo, studentName);
-        console.log('hasActiveApply', a.student_no === studentNo && a.status !== 'REJECTED');
         return a.student_no === studentNo && a.status !== 'REJECTED';
       });
       
+      //TODO: 检查是否已有非拒绝状态的申请
       if (hasActiveApply) {
         message.warning('你已有一个正在处理中的申请，请等待审批结果');
         return;
       }
       
-      const { id: topicId, teacher = {}} = record;
+      const { id: topicId, teacher = {}, title: topicTitle} = record;
       const teacherNo = teacher?.teacher_no;
       const teacherName = teacher?.name;
       
@@ -92,9 +92,11 @@ const StudentPage = () => {
         studentNo,
         studentName,
         teacherName,
-        topics.find(t => t.id === topicId)?.title || ''
+        topicTitle,
+        // topics.find(t => t.id === topicId)?.title || '',
+        studentClass,
       );
-      message.success('申请成功');
+      message.success('申请已提交，等待老师审批');
       fetchApplies();
     } catch (error) {
       message.error(error.message || '申请失败');

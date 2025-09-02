@@ -60,19 +60,57 @@ router.post('/topics/import', upload.single('file'), async (req, res) => {
 // 学生申请毕设题目
 router.post('/apply', async (req, res) => {
   try {
-    // console.log('req body' , req.body);
-    const { student_no, student_name,  teacher_no, teacher_name, topic_id, topic_title } = req.body;
-    const apply = await Apply.create({
-      student_no,
-      student_name,
-      teacher_no,
-      teacher_name,
-      topic_id,
-      topic_title,
-      status: 'PENDING' // 默认状态为待处理
+    const { student_no, student_name, teacher_no, teacher_name, topic_id, topic_title, student_class } = req.body;
+    
+    // 检查是否已有该题目的申请记录
+    const existingApply = await Apply.findOne({
+      where: { topic_id }
     });
-    res.json({ success: true, data: apply });
+    
+    // 情况1: 没有该题目的申请记录，直接创建
+    if (!existingApply) {
+      const apply = await Apply.create({
+        student_no,
+        student_name,
+        teacher_no,
+        teacher_name,
+        topic_id,
+        topic_title,
+        student_class,
+        status: 'PENDING'
+      });
+      return res.json({ success: true, data: apply });
+    }
+    
+    // 情况2: 已有PENDING或APPROVED状态的申请，禁止重复申请
+    if (existingApply.status === 'PENDING' || existingApply.status === 'APPROVED') {
+      return res.status(400).json({ 
+        success: false, 
+        message: '该题目已被申请，无法再次申请'
+      });
+    }
+    
+    // 情况3: 已有REJECTED状态的申请，更新记录
+    if (existingApply.status === 'REJECTED') {
+      await existingApply.update({
+        student_no,
+        student_name,
+        student_class,
+        status: 'PENDING',
+        teacher_no,
+        teacher_name
+      });
+      return res.json({ success: true, data: existingApply });
+    }
+    
+    // 其他情况返回错误
+    return res.status(400).json({ 
+      success: false, 
+      message: '申请失败，请检查申请状态'
+    });
+    
   } catch (error) {
+    console.log('error', error.message);  
     res.status(500).json({ success: false, message: error.message });
   }
 });
@@ -92,9 +130,13 @@ router.post('/apply/:id', async (req, res) => {
     
     // 如果批准，更新学生指导教师
     if (status === 'APPROVED') {
-      const student = await Student.findByPk(apply.student_id);
-      student.teacher_id = apply.teacher_id;
-      await student.save();
+      const student = await Student.findByPk(apply.student_no);
+      if (student) {
+        student.teacher_id = apply.teacher_no;
+        await student.save();
+      } else {
+        console.error(`找不到ID为${apply.student_no}的学生记录`);
+      }
     }
     
     res.json({ success: true, data: apply });
@@ -164,6 +206,32 @@ router.get('/students', async (req, res) => {
   }
 });
 
+// 通过学号获取单个学生信息
+router.get('/students/:studentNo', async (req, res) => {
+  try {
+    const { studentNo } = req.params;
+    const student = await Student.findOne({
+      where: { student_no: studentNo },
+      include: [
+        Teacher,
+        {
+          model: Apply,
+          attributes: ['status', 'teacher_name', 'teacher_no'],
+          required: false
+        }
+      ]
+    });
+    
+    if (!student) {
+      return res.status(404).json({ success: false, message: '学生不存在' });
+    }
+    
+    res.json({ success: true, data: student });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 // 获取教师所有题目
 router.get('/topics/teacher/:teacherNo', async (req, res) => {
   try {
@@ -174,7 +242,7 @@ router.get('/topics/teacher/:teacherNo', async (req, res) => {
         Teacher,
         {
           model: Apply,
-          attributes: ['id' ,'status', 'student_name', 'apply_time'],
+          attributes: ['id' ,'status', 'student_name', 'apply_time', 'student_class'],
           required: false
         }
       ]

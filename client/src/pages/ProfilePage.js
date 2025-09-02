@@ -12,7 +12,7 @@ const ProfilePage = () => {
   const [role, setRole] = useState('student');
 
   useEffect(() => {
-    fetchUserInfo();
+    // fetchUserInfo();
   }, []);
 
   const fetchUserInfo = async () => {
@@ -60,10 +60,13 @@ const ProfilePage = () => {
   const handleChangePassword = async (values) => {
     try {
       setLoading(true);
-      await userApi.changePassword(userInfo.id, values);
+      const user = JSON.parse(localStorage.getItem('user'));
+      // console.log('change password userInfo', userInfo, values);
+      await userApi.changePassword(user.id, values);
       message.success('密码修改成功');
     } catch (error) {
-      message.error('密码修改失败');
+      // console.error('Error changing password:', error);
+      message.error(error.response?.data?.message || '密码修改失败');
     } finally {
       setLoading(false);
     }
@@ -89,8 +92,8 @@ const ProfilePage = () => {
 
   return (
     <div style={{ padding: '24px' }}>
-      <Tabs defaultActiveKey="1">
-        <TabPane tab="个人信息" key="1">
+      <Tabs defaultActiveKey="2">
+        {/* <TabPane tab="个人信息" key="1">
           <Card title="基本信息" loading={loading}>
             {userInfo && (
               <div>
@@ -102,10 +105,10 @@ const ProfilePage = () => {
               </div>
             )}
           </Card>
-        </TabPane>
+        </TabPane> */}
         
         <TabPane tab="修改信息" key="2">
-          <Card title="修改联系方式" loading={loading}>
+          {/* <Card title="修改联系方式" loading={loading}>
             <Form
               form={form}
               onFinish={handleUpdateInfo}
@@ -133,7 +136,7 @@ const ProfilePage = () => {
                 </Button>
               </Form.Item>
             </Form>
-          </Card>
+          </Card> */}
           
           <Card title="修改密码" style={{ marginTop: '16px' }} loading={loading}>
             <Form onFinish={handleChangePassword} layout="vertical">

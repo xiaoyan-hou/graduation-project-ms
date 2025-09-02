@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { login } from '../api';
+import { studentApi } from '../api';
 import { LockOutlined, UserOutlined } from '@ant-design/icons';
 import { Button, Checkbox, Form, Input, Flex, message } from 'antd';
 import './Login.css';
@@ -13,10 +14,22 @@ const Login = () => {
         // console.log('Received values of form: ', values);
         try {
             setLoading(true);
-            // console.log('befor login values', values);
             const res = await login(values);
-            const { token, user, permissions } = res; // 解构respons
-            // console.log('after login', token, user);
+            const { token, user } = res; // 解构respons
+            
+            // 如果是学生角色，尝试获取学生信息
+            if (user.role === 'student' || (Array.isArray(user.role) && user.role.includes('student'))) {
+              try {
+                const studentRes = await studentApi.getStudentByNo(user.userno);
+                if (studentRes) {
+                  user.student_info = studentRes;
+                }
+              } catch (error) {
+                // 查询失败不报错
+                console.log('查询学生信息失败', error);
+              }
+            }
+            
             // 存储token和用户信息
             localStorage.setItem('token', token);
             localStorage.setItem('user', JSON.stringify(user));
