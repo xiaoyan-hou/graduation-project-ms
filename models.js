@@ -261,6 +261,8 @@ const Apply = sequelize.define('apply', {
     teacher_no: { type: DataTypes.CHAR(20), allowNull: false },
     topic_id:   { type: DataTypes.INTEGER, allowNull: false },
     student_name: { type: DataTypes.CHAR(30), allowNull: false },
+    student_class: { type: DataTypes.STRING(30), allowNull: true },
+    graduation_year: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 2026 },
     teacher_name: { type: DataTypes.CHAR(30), allowNull: false },
     topic_title:   { type: DataTypes.STRING(200), allowNull: false }
   }, {

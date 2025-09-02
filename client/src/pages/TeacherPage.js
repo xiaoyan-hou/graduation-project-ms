@@ -29,18 +29,18 @@ const TeacherPage = () => {
   }
 
 
-  const fetchApplies = async () => {
-    setLoading(true);
-    try {
-      const apppliesRes = await applyApi.getApplies();
-      console.log('teacher page apppliesRes', apppliesRes);
-      setApplies(apppliesRes);
-    } catch (error) {
-      message.error('获取申请列表失败');
-    } finally {
-      setLoading(false);
-    }
-  };
+  // const fetchApplies = async () => {
+  //   setLoading(true);
+  //   try {
+  //     const apppliesRes = await applyApi.getApplies();
+  //     console.log('teacher page apppliesRes', apppliesRes);
+  //     setApplies(apppliesRes);
+  //   } catch (error) {
+  //     message.error('获取申请列表失败');
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
   const fetchTopics = async () => {
     setLoading(true);
@@ -48,7 +48,28 @@ const TeacherPage = () => {
       const user = JSON.parse(localStorage.getItem('user'));
       const res = await topicApi.getTopicsByTeacher(user.userno);
       console.log('teacher page getTopicsByTeacher', res);
-      setTopics(res);
+      
+      const processedTopics = res.map(topic => {
+        if (!topic.applies || topic.applies.length === 0) return topic;
+        
+        let apply = null;
+        if (topic.applies.length === 1) {
+          apply = topic.applies[0];
+        } else {
+          apply = topic.applies.find(a => a.status !== 'REJECTED') || topic.applies[0];
+        }
+        
+        return {
+          ...topic,
+          applyStatus: apply.status,
+          applyStudent: apply.student_name,
+          applyStudentClass: apply.student_class,
+          applyTime: apply.apply_time,
+          applies: topic.applies
+        };
+      });
+      
+      setTopics(processedTopics);
     } catch (error) {
       message.error('获取题目列表失败');
     } finally {
@@ -61,17 +82,20 @@ const TeacherPage = () => {
       const approvedCount = topics.filter(t => t.applies?.some(a => a.status === 'APPROVED')).length;
       const maxStudents = topics[0]?.teacher?.max_students || 0;
       
+      console.log('approvedCount', approvedCount);
+      console.log('maxStudents', maxStudents);
+      
       if (maxStudents > 0 && approvedCount >= maxStudents) {
         message.error(`已达到最大指导学生数${maxStudents}人，无法再批准`);
         return;
       }
       
       await applyApi.updateApply(id, { status: 'APPROVED' });
-      message.success('已批准申请');
+      message.success('已通过申请');
       // fetchApplies();
       fetchTopics();
     } catch (error) {
-      message.error('操作失败');
+      message.error('通过申请操作失败');
     }
   };
 
@@ -83,7 +107,7 @@ const TeacherPage = () => {
       // fetchApplies();
       fetchTopics();
     } catch (error) {
-      message.error('操作失败');
+      message.error('拒绝申请操作失败');
     }
   };
 
@@ -146,17 +170,25 @@ const TeacherPage = () => {
       dataIndex: 'title',
       key: 'title',
     },
-    {
-      title: '描述',
-      dataIndex: 'description',
-      key: 'description',
-    },
+    // {
+    //   title: '描述',
+    //   dataIndex: 'summary',
+    //   key: 'summary',
+    // },
     {
       title: '申请学生',
       dataIndex: ['applies', '0', 'student_name'],
       key: 'student_name',
       render: (_, record) => (
         record.applies?.length > 0 ? record.applies[0].student_name : '暂无申请'
+      ),
+    },
+    {
+      title: '学生班级',
+      dataIndex: ['applies', '0', 'student_class'],
+      key: 'student_class',
+      render: (_, record) => (
+        record.applies?.length > 0 ? record.applies[0].student_class : '暂无申请'
       ),
     },
     {

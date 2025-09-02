@@ -105,6 +105,15 @@ export const studentApi = {
       // 返回空数组
       return [];
     }
+  },
+  getStudentByNo: async (studentNo) => {
+    try {
+      const response = await api.get(`/students/${studentNo}`);
+      return response.data;
+    } catch (error) {
+      console.error('获取学生信息失败:', error);
+      return null;
+    }
   }
 };
 
@@ -123,7 +132,7 @@ export const topicApi = {
   getTopicsByTeacher: async (teacherNo) => {
     try {
       const response = await api.get(`/topics/teacher/${teacherNo}`);
-      console.log('获取的教师我的题目列表:', response.data);
+      // console.log('获取的教师我的题目列表:', response.data);
       return response.data;
     } catch (error) {
       console.error('获取教师题目列表失败:', error);
@@ -147,7 +156,8 @@ export const topicApi = {
     studentNo,
     studentName,
     teacherName,
-    topicTitle) => {
+    topicTitle,
+    studentClass) => {
     try {
       const response = await api.post('/apply', {
         student_no: studentNo,
@@ -155,7 +165,8 @@ export const topicApi = {
         topic_id: topicId,
         student_name: studentName,
         teacher_name: teacherName,
-        topic_title: topicTitle
+        topic_title: topicTitle,
+        student_class: studentClass
       });
 
       return response.data;
@@ -203,7 +214,7 @@ export const applyApi = {
     try {
       console.log('获取学生申请列表的学生学号:', studentNo);
       const response = await api.get(`/applies/student/${studentNo}`);
-      console.log('获取的我的申请列表:', response.data);
+      // console.log('获取的我的申请列表:', response.data);
       return response.data;
     } catch (error) {
       console.error('获取学生申请列表失败:', error);
