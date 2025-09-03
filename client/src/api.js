@@ -1,8 +1,8 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000/api',
-  // baseURL: 'http://47.107.176.158:5000/api',
+  // baseURL: process.env.REACT_APP_API_BASE_URL || 'http://localhost:5000/api',
+  baseURL: 'http://47.107.176.158:5000/api',
   timeout: 5000
 });
 
@@ -203,7 +203,7 @@ export const applyApi = {
     try {
       const response = await api.get('/applies');
       // 确保返回的是数组
-      console.log('获取的申请列表:', response.data);
+      // console.log('获取的申请列表:', response.data);
       return response.data;
     } catch (error) {
       console.error('获取申请列表失败:', error);
@@ -221,6 +221,14 @@ export const applyApi = {
       return [];
     }
   },
-
+  getTeacherStats: async () => {
+    try {
+      const response = await api.get('/applies/teacher-stats');
+      return response.data;
+    } catch (error) {
+      console.error('获取教师统计信息失败:', error);
+      return {};
+    }
+  }
 }
 

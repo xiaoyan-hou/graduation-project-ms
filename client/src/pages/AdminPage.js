@@ -230,7 +230,20 @@ const AdminPage = () => {
     { title: '学生姓名', dataIndex: 'student_name', key: 'student_name' },
     { title: '教师姓名', dataIndex: 'teacher_name', key: 'teacher_name' },
     { title: '题目名称', dataIndex: 'topic_title', key: 'topic_title' },
-    { title: '申请状态', dataIndex: 'apply_status', key: 'apply_status' },
+    { 
+      title: '申请状态', 
+      dataIndex: 'status', 
+      key: 'status',
+      render: (status) => {
+        const statusMap = {
+          'PENDING': { text: '审批中', color: 'orange' },
+          'APPROVED': { text: '已通过', color: 'green' },
+          'REJECTED': { text: '已拒绝', color: 'red' }
+        };
+        const statusInfo = statusMap[status] || { text: status, color: 'default' };
+        return <Tag color={statusInfo.color}>{statusInfo.text}</Tag>;
+      }
+    },
   ];
 
   return (

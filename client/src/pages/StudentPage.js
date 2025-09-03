@@ -31,8 +31,17 @@ const StudentPage = () => {
   const fetchTopics = async () => {
     setLoading(true);
     try {
-      const res = await topicApi.getTopics();
-      setTopics(res || []);
+      const [topicsRes, statsRes] = await Promise.all([
+        topicApi.getTopics(),
+        applyApi.getTeacherStats()
+      ]);
+      
+      const topicsWithDisabled = (topicsRes || []).map(topic => ({
+        ...topic,
+        isDisabled: (statsRes[topic.teacher_no] || 0) >= (topic.teacher?.max_students || 0)
+      }));
+      
+      setTopics(topicsWithDisabled);
     } catch (error) {
       message.error('获取题目列表失败');
     } finally {
@@ -76,7 +85,6 @@ const StudentPage = () => {
         return a.student_no === studentNo && a.status !== 'REJECTED';
       });
       
-      //TODO: 检查是否已有非拒绝状态的申请
       if (hasActiveApply) {
         message.warning('你已有一个正在处理中的申请，请等待审批结果');
         return;
@@ -104,8 +112,9 @@ const StudentPage = () => {
   };
 
   const   isTopicDisabled = (record) => {
-    // const topic = topics.find(t => t.id === topicId);
-    return record?.apply_status === 'PENDING' || record?.apply_status === 'APPROVED';
+    return record?.apply_status === 'PENDING' || 
+           record?.apply_status === 'APPROVED' || 
+           record?.isDisabled;
   };
 
   const topicColumns = [
