@@ -49,7 +49,8 @@ router.post('/topics/import', upload.single('file'), async (req, res) => {
     const workbook = xlsx.readFile(req.file.path);
     const worksheet = workbook.Sheets[workbook.SheetNames[0]];
     const topics = xlsx.utils.sheet_to_json(worksheet);
-    
+    // console.log('/topics/import',  topics[0]);
+
     await Topic.bulkCreate(topics);
     res.json({ success: true, message: '毕设题目导入成功' });
   } catch (error) {
@@ -188,7 +189,7 @@ router.get('/students', async (req, res) => {
         }
       ]
     });
-    console.log('get studnets',students[students.length-1].applies[0]);
+    // console.log('get studnets',students[students.length-1].applies[0]);
     const studentsWithStatus = students.map(student => {
       const applyStatus = student.applies && student.applies.length > 0 
         ? student.applies[0].status === 'APPROVED' ? 'completed' : 'pending'
@@ -300,7 +301,7 @@ router.get('/topics', async (req, res) => {
 router.get('/applies', async (req, res) => {
   try {
     const applies = await Apply.findAll({
-      include: [Student, Teacher, Topic]
+      // include: [Student, Teacher, Topic]
     });
     res.json({ success: true, data: applies });
   } catch (error) {
@@ -314,9 +315,29 @@ router.get('/applies/student/:studentNo', async (req, res) => {
     const { studentNo } = req.params;
     const applies = await Apply.findAll({
       where: { student_no: studentNo },
-      include: [Teacher, Topic]
+      // include: [Teacher, Topic]
     });
     res.json({ success: true, data: applies });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// 获取教师已批准学生数统计
+router.get('/applies/teacher-stats', async (req, res) => {
+  try {
+    const approvedApplies = await Apply.findAll({
+      where: { status: 'APPROVED' },
+      attributes: ['teacher_no']
+    });
+    
+    const stats = approvedApplies.reduce((acc, apply) => {
+      const teacherNo = apply.teacher_no;
+      acc[teacherNo] = (acc[teacherNo] || 0) + 1;
+      return acc;
+    }, {});
+    
+    res.json({ success: true, data: stats });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -328,7 +349,7 @@ router.post('/users/:userId', async (req, res) => {
     const { userId } = req.params;
     const userData = req.body;
     
-  console.log('userData', userData, userId);
+  // console.log('userData', userData, userId);
 
     const user = await User.findByPk(userId);
     if (!user) {

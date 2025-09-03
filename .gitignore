@@ -39,4 +39,4 @@ coverage/
 *.tmp
 
 # 脚本文件
-scripts/
+/script/
