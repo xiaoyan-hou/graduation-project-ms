@@ -47,7 +47,7 @@ const TeacherPage = () => {
     try {
       const user = JSON.parse(localStorage.getItem('user'));
       const res = await topicApi.getTopicsByTeacher(user.userno);
-      console.log('teacher page getTopicsByTeacher', res);
+      // console.log('teacher page getTopicsByTeacher', res);
       
       const processedTopics = res.map(topic => {
         if (!topic.applies || topic.applies.length === 0) return topic;

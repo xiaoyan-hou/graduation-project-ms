@@ -99,6 +99,7 @@ export const studentApi = {
   getStudents: async () => {
     try {
       const response = await api.get('/students');
+      // console.log('获取的学生列表:', response.data);
       return response.data;
     } catch (error) {
       console.error('获取学生列表失败:', error);
