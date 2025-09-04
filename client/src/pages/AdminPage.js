@@ -89,8 +89,7 @@ const AdminPage = () => {
           break;
         case 'students':
           const studentsRes = await studentApi.getStudents();
-          // console.log('studentsRes', studentsRes);
-
+          // console.log('studentsRes', studentsRes[0]);
           setStudents(studentsRes);
           break;
         case 'topics':
@@ -162,16 +161,17 @@ const AdminPage = () => {
 
   const studentColumns = [
     { title: '姓名', dataIndex: 'name', key: 'name' },
-    { title: '学号', dataIndex: 'student_no', key: 'student_no' },
+    // { title: '学号', dataIndex: 'student_no', key: 'student_no' },
     { title: '班级', dataIndex: 'class', key: 'class' },
+    { title: '题目', dataIndex: 'topic_title', key: 'topic_title' },
     {
       title: '导师姓名', 
       dataIndex: 'teacher_name', 
       key: 'teacher_name',
-      render: (_, record) => {
-        const validApply = record.applies?.find(a => a.status !== 'reject');
-        return validApply?.teacher_name || '-';
-      }
+      // render: (_, record) => {
+      //   const validApply = record.applies?.find(a => a.status !== 'reject');
+      //   return validApply?.teacher_name || '-';
+      // }
     },
     { 
       title: '选题状态', 
@@ -333,12 +333,27 @@ const AdminPage = () => {
                   style={{ width: 150, marginRight: 10 }}
                   placeholder="搜索学生姓名"
                   allowClear
-                  onChange={(e) => {
+                  onPressEnter={(e) => {
                     const value = e.target.value;
                     if (!value) {
                       loadTabData('students');
                     } else {
-                      const filtered = students.filter(s => s.name.includes(value));
+                      const filtered = students.filter(s => s.name?.includes(value));
+                      setStudents(filtered);
+                    }
+                  }}
+                />
+                <Input
+                  style={{ width: 150, marginRight: 10 }}
+                  placeholder="筛选教师姓名"
+                  allowClear
+                  onPressEnter={(e) => {
+                    const value = e.target.value;
+                    if (!value) {
+                      loadTabData('students');
+                    } else {
+                      const filtered = students.filter(s => s.teacher_name?.includes(value));
+                      console.log('filtered', students[0]);
                       setStudents(filtered);
                     }
                   }}
@@ -349,6 +364,19 @@ const AdminPage = () => {
                 >
                   <Button icon={<UploadOutlined />}>导入学生</Button>
                 </Upload>
+                <Button 
+                  style={{ marginLeft: 10 }}
+                  onClick={() => {
+                    import('xlsx').then(XLSX => {
+                      const ws = XLSX.utils.json_to_sheet(students);
+                      const wb = XLSX.utils.book_new();
+                      XLSX.utils.book_append_sheet(wb, ws, '学生列表');
+                      XLSX.writeFile(wb, '学生列表.xlsx');
+                    });
+                  }}
+                >
+                  导出Excel
+                </Button>
               </div>
             }
           >
@@ -357,6 +385,11 @@ const AdminPage = () => {
               dataSource={students} 
               loading={loading}
               rowKey="student_no"
+              pagination={{
+                showTotal: total => `共 ${total} 条`,
+                showSizeChanger: true,
+                pageSizeOptions: ['10', '20', '50', '100']
+              }}
             />
           </Card>
         </TabPane>
@@ -380,12 +413,68 @@ const AdminPage = () => {
           </Card>
         </TabPane>
         <TabPane tab="申请列表" key="applies">
-          <Card>
+          <Card 
+            extra={
+              <div>
+                <Input
+                  style={{ width: 150, marginRight: 10 }}
+                  placeholder="筛选教师姓名"
+                  allowClear
+                  onPressEnter={(e) => {
+                    const value = e.target.value;
+                    if (!value) {
+                      loadTabData('applies');
+                    } else {
+                      const filtered = applies.filter(a => a.teacher_name?.includes(value));
+                      setApplies(filtered);
+                    }
+                  }}
+                />
+                <Select
+                  style={{ width: 150, marginRight: 10 }}
+                  placeholder="筛选申请状态"
+                  allowClear
+                  onChange={(value) => {
+                    if (!value) {
+                      loadTabData('applies');
+                    } else {
+                      loadTabData('applies').then(() => {
+                        const filtered = applies.filter(a => a.status === value);
+                        setApplies(filtered);
+                      });
+                    }
+                  }}
+                >
+                  <Select.Option value="PENDING">审批中</Select.Option>
+                  <Select.Option value="APPROVED">已通过</Select.Option>
+                  <Select.Option value="REJECTED">已拒绝</Select.Option>
+                </Select>
+                <Button 
+                  style={{ marginRight: 10 }}
+                  onClick={() => {
+                    import('xlsx').then(XLSX => {
+                      const ws = XLSX.utils.json_to_sheet(applies);
+                      const wb = XLSX.utils.book_new();
+                      XLSX.utils.book_append_sheet(wb, ws, '申请列表');
+                      XLSX.writeFile(wb, '申请列表.xlsx');
+                    });
+                  }}
+                >
+                  导出Excel
+                </Button>
+              </div>
+            }
+          >
             <Table 
               columns={applyColumns} 
               dataSource={applies} 
               loading={loading}
               rowKey="id"
+              pagination={{
+                showTotal: total => `共 ${total} 条`,
+                showSizeChanger: true,
+                pageSizeOptions: ['10', '20', '50', '100']
+              }}
             />
           </Card>
         </TabPane>

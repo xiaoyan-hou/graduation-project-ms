@@ -181,23 +181,36 @@ router.get('/students', async (req, res) => {
   try {
     const students = await Student.findAll({
       include: [
-        Teacher,
+        // Teacher,
         {
           model: Apply,
-          attributes: ['status', 'teacher_name', 'teacher_no'],
+          attributes: ['status', 'teacher_name', 'teacher_no', 'topic_title'],
           required: false
         }
       ]
     });
     // console.log('get studnets',students[students.length-1].applies[0]);
     const studentsWithStatus = students.map(student => {
-      const applyStatus = student.applies && student.applies.length > 0 
-        ? student.applies[0].status === 'APPROVED' ? 'completed' : 'pending'
+      let latestApply = null;
+      
+      if (student.applies && student.applies.length > 0) {
+        // 按照申请时间降序排序
+        const sortedApplies = [...student.applies].sort((a, b) => 
+          new Date(b.apply_time) - new Date(a.apply_time)
+        );
+        latestApply = sortedApplies[0];
+      }
+      
+      const applyStatus = latestApply 
+        ? latestApply.status === 'APPROVED' ? 'completed' : 'pending'
         : 'none';
       
       return {
         ...student.toJSON(),
-        apply_status: applyStatus
+        apply_status: applyStatus,
+        teacher_name: latestApply?.teacher_name || null,
+        teacher_no: latestApply?.teacher_no || null,
+        topic_title: latestApply?.topic_title || null,
       };
     });
     
