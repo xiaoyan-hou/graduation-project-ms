@@ -356,6 +356,40 @@ router.get('/applies/teacher-stats', async (req, res) => {
   }
 });
 
+// 获取教师题目申请情况统计
+router.get('/teachers/apply-stats', async (req, res) => {
+  try {
+    const applies = await Apply.findAll();
+    
+    const stats = applies.reduce((acc, apply) => {
+      const teacherNo = apply.teacher_no;
+      if (!acc[teacherNo]) {
+        acc[teacherNo] = {
+          teacher_name: apply.teacher_name,
+          total: 0,
+          approved: 0,
+          pending: 0
+        };
+      }
+      
+      acc[teacherNo].total += 1;
+      if (apply.status === 'APPROVED') {
+        acc[teacherNo].approved += 1;
+      } else if (apply.status === 'PENDING') {
+        acc[teacherNo].pending += 1;
+      }
+      
+      return acc;
+    }, {});
+    
+    // res.json({ success: true, data: Object.values(stats) });
+    res.json({ success: true, data: stats });
+
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 // 更新用户信息
 router.post('/users/:userId', async (req, res) => {
   try {

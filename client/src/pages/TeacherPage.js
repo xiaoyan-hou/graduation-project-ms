@@ -212,31 +212,31 @@ const TeacherPage = () => {
         return <Tag color={color}>{status}</Tag>;
       },
     },
-    {
-      title: '操作',
-      key: 'action',
-      render: (_, record) => (
-        <Flex gap="small" wrap>
-          <Button 
-            type="primary"
-            onClick={() => handleApprove(record.applies?.[0]?.id)}
-            disabled={!record.applies?.length || record.applies[0].status !== 'PENDING'}
-          >
-            通过
-          </Button>
-          <Button 
-            type="primary" 
-            danger
-            onClick={() => handleReject(record.applies?.[0]?.id)}
-            disabled={!record.applies?.length || record.applies[0].status !== 'PENDING'}
-          >
-            拒绝
-          </Button>
-          {/* <Button type="primary">编辑</Button>
-          <Button type="primary" danger>删除</Button> */}
-        </Flex>
-      ),
-    },
+    // {
+    //   title: '操作',
+    //   key: 'action',
+    //   render: (_, record) => (
+    //     <Flex gap="small" wrap>
+    //       <Button 
+    //         type="primary"
+    //         onClick={() => handleApprove(record.applies?.[0]?.id)}
+    //         disabled={!record.applies?.length || record.applies[0].status !== 'PENDING'}
+    //       >
+    //         通过
+    //       </Button>
+    //       <Button 
+    //         type="primary" 
+    //         danger
+    //         onClick={() => handleReject(record.applies?.[0]?.id)}
+    //         disabled={!record.applies?.length || record.applies[0].status !== 'PENDING'}
+    //       >
+    //         拒绝
+    //       </Button>
+    //       {/* <Button type="primary">编辑</Button>
+    //       <Button type="primary" danger>删除</Button> */}
+    //     </Flex>
+    //   ),
+    // },
   ];
 
   return (

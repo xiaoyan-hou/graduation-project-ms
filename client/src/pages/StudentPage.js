@@ -127,20 +127,20 @@ const StudentPage = () => {
     },
     { title: '题目名称', dataIndex: 'title', key: 'title', width: 400 },
     { title: '简介', dataIndex: 'summary', key: 'summary' },
-    {
-      title: '操作',
-      key: 'action',
-      width: 150,
-      render: (_, record) => (
-        <Button 
-          type="primary"
-          onClick={() => handleApply(record)}
-          disabled={isTopicDisabled(record)}
-        >
-          申请
-        </Button>
-      ),
-    },
+    // {
+    //   title: '操作',
+    //   key: 'action',
+    //   width: 150,
+    //   render: (_, record) => (
+    //     <Button 
+    //       type="primary"
+    //       onClick={() => handleApply(record)}
+    //       disabled={isTopicDisabled(record)}
+    //     >
+    //       申请
+    //     </Button>
+    //   ),
+    // },
   ];
 
   const applyColumns = [

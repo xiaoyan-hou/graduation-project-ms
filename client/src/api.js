@@ -230,6 +230,16 @@ export const applyApi = {
       console.error('获取教师统计信息失败:', error);
       return {};
     }
-  }
+  },
+  getTeacherApplyStats: async () => {
+    try {
+      const response = await api.get('/teachers/apply-stats');
+      return response.data;
+    } catch (error) {
+      console.error('获取教师统计信息失败:', error);
+      return {};
+    }
+  },
+
 }
 
