@@ -13,6 +13,7 @@ const AdminPage = () => {
   const [topics, setTopics] = useState([]);
   const [applies, setApplies] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [stats, setStats] = useState([]);
 
   const [visible, setVisible] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
@@ -93,12 +94,48 @@ const AdminPage = () => {
           setStudents(studentsRes);
           break;
         case 'topics':
-          const topicsRes = await topicApi.getTopics();
-          setTopics(topicsRes);
+          // const topicsRes = await topicApi.getTopics();
+          const [topicsRes, topicAppliesRes] = await Promise.all([
+            topicApi.getTopics(),
+            applyApi.getApplies()
+          ]);
+          
+          const topicsWithApplies = topicsRes.map(topic => {
+            const topicApplies = topicAppliesRes
+              .filter(a => a.topic_id === topic.id)
+              .sort((a, b) => new Date(b.apply_time) - new Date(a.apply_time));
+              
+            const latestApply = topicApplies[0];
+            
+            return {
+              ...topic,
+              student_name: latestApply?.student_name || null,
+              apply_status: latestApply?.status || 'NONE'
+            };
+          });
+          
+          setTopics(topicsWithApplies);
           break;
         case 'applies':
           const appliesRes = await applyApi.getApplies();
           setApplies(appliesRes);
+          break;
+        case 'stats':
+          // const statsRes = await applyApi.getStats();
+          const [teachersRes2, teachersStatsRes] = await Promise.all([
+            teacherApi.getTeachers(),
+            applyApi.getTeacherApplyStats()
+          ]);
+          
+          console.log('teachersStatsRes', teachersStatsRes);
+          const statsRes = (teachersRes2 || []).map(teacher => ({
+            ...teacher,
+           apply_total: teachersStatsRes[teacher.teacher_no]?.total || 0,
+           apply_approved: teachersStatsRes[teacher.teacher_no]?.approved || 0,
+           apply_pending: teachersStatsRes[teacher.teacher_no]?.pending || 0,   
+          }));
+          // console.log('statsRes', statsRes); // 调试输出
+          setStats(statsRes);
           break;
       }
     } catch (error) {
@@ -216,14 +253,36 @@ const AdminPage = () => {
       title: '题目名称', 
       dataIndex: 'title', 
       key: 'title',
-      width: 400
+      width: 200
     },
     { 
-      title: '简介', 
-      dataIndex: 'summary', 
-      key: 'summary',
-      // ellipsis: true  // 超出宽度显示省略号
+      title: '申请学生', 
+      dataIndex: 'student_name', 
+      key: 'student_name',
+      render: (text) => <span>{text || '-'}</span>,
+      width: 120
     },
+    { 
+      title: '申请状态', 
+      dataIndex: 'apply_status', 
+      key: 'apply_status',
+      render: (status) => {
+        const statusMap = {
+          'PENDING': { text: '审批中', color: 'orange' },
+          'APPROVED': { text: '已通过', color: 'green' },
+          'REJECTED': { text: '已拒绝', color: 'red' },
+          'NONE': { text: '未申请', color: 'default' }
+        };
+        const statusInfo = statusMap[status] || { text: status, color: 'default' };
+        return <Tag color={statusInfo.color}>{statusInfo.text}</Tag>;
+      },
+      width: 120
+    },
+    // { 
+    //   title: '简介', 
+    //   dataIndex: 'summary', 
+    //   key: 'summary',
+    // },
   ];
 
   const applyColumns = [
@@ -396,12 +455,31 @@ const AdminPage = () => {
         <TabPane tab="题目管理" key="topics">
           <Card 
             extra={
-              <Upload 
-                beforeUpload={(file) => handleImport('topic', file)}
-                showUploadList={false}
-              >
-                <Button icon={<UploadOutlined />}>导入题目</Button>
-              </Upload>
+              <div>
+                <Upload 
+                  beforeUpload={(file) => handleImport('topic', file)}
+                  showUploadList={false}
+                >
+                  <Button icon={<UploadOutlined />}>导入题目</Button>
+                </Upload>
+                <Button 
+                  style={{ marginLeft: 10 }}
+                  onClick={() => {
+                    import('xlsx').then(XLSX => {
+                      const exportData = topics.map(topic => ({
+                        ...topic,
+                        teacher_name: topic.teacher?.name || '-'  // 确保教师姓名被包含
+                      }));
+                      const ws = XLSX.utils.json_to_sheet(exportData);
+                      const wb = XLSX.utils.book_new();
+                      XLSX.utils.book_append_sheet(wb, ws, '题目列表');
+                      XLSX.writeFile(wb, '题目列表.xlsx');
+                    });
+                  }}
+                >
+                  导出Excel
+                </Button>
+              </div>
             }
           >
             <Table 
@@ -409,6 +487,58 @@ const AdminPage = () => {
               dataSource={topics} 
               loading={loading}
               rowKey="id"
+            />
+          </Card>
+        </TabPane>
+        <TabPane tab="数据统计" key="stats">
+          <Card 
+            extra={
+              <div>
+                <Input
+                  style={{ width: 200, marginRight: 10 }}
+                  placeholder="筛选教师姓名"
+                  allowClear
+                  onPressEnter={(e) => {
+                    const value = e.target.value;
+                    if (!value) {
+                      loadTabData('stats');
+                    } else {
+                      const filtered = stats.filter(s => s.name?.includes(value));
+                      setStats(filtered);
+                    }
+                  }}
+                />
+                <Button 
+                  style={{ marginLeft: 10 }}
+                  onClick={() => {
+                    import('xlsx').then(XLSX => {
+                      const ws = XLSX.utils.json_to_sheet(stats);
+                      const wb = XLSX.utils.book_new();
+                      XLSX.utils.book_append_sheet(wb, ws, '教师统计');
+                      XLSX.writeFile(wb, '教师统计.xlsx');
+                    });
+                  }}
+                >
+                  导出Excel
+                </Button>
+              </div>
+            }
+          >
+            <Table 
+              columns={[
+                { title: '教师姓名', dataIndex: 'name', key: 'name' },
+                { title: '申请数', dataIndex: 'apply_total', key: 'apply_total' },
+                { title: '已通过数', dataIndex: 'apply_approved', key: 'apply_approved' },
+                { title: '待审批数', dataIndex: 'apply_pending', key: 'apply_pending' }
+              ]} 
+              dataSource={stats} 
+              loading={loading}
+              rowKey="teacher_no"
+              pagination={{
+                showTotal: total => `共 ${total} 条`,
+                showSizeChanger: true,
+                pageSizeOptions: ['10', '20', '50', '100']
+              }}
             />
           </Card>
         </TabPane>
